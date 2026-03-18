@@ -1,26 +1,37 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-brand-purple: #8854c0;
+  --color-brand-light: #f2edf9;
+  --color-brand-dark: #3e1b6f;
+  --color-brand-green: #00c985;
+  --color-brand-yellow: #ffc933;
+  --color-brand-red: #ea4335;
+  --color-brand-blue: #2d9cdb;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-brand-light text-gray-900 font-sans antialiased;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.btn-primary {
+  @apply bg-brand-purple hover:bg-[#7246a3] text-white font-bold py-3 px-6 rounded-xl shadow-[0_4px_0_0_#5e358e] active:shadow-none active:translate-y-[4px] transition-all;
+}
+
+.btn-secondary {
+  @apply bg-white hover:bg-gray-50 text-brand-purple border-2 border-[#e0e0e0] font-bold py-3 px-6 rounded-xl shadow-[0_4px_0_0_#e0e0e0] active:shadow-none active:translate-y-[4px] transition-all;
+}
+
+.btn-success {
+  @apply bg-brand-green hover:bg-[#00a66d] text-white font-bold py-3 px-6 rounded-xl shadow-[0_4px_0_0_#008658] active:shadow-none active:translate-y-[4px] transition-all;
+}
+
+.btn-danger {
+  @apply bg-brand-red hover:bg-[#c2362a] text-white font-bold py-3 px-6 rounded-xl shadow-[0_4px_0_0_#9a2b22] active:shadow-none active:translate-y-[4px] transition-all;
+}
+
+.card {
+  @apply bg-white rounded-2xl p-6 shadow-sm border-2 border-gray-100;
 }
