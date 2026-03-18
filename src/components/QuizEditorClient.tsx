@@ -248,12 +248,12 @@ export default function QuizEditorClient({
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">{t("bloomLevelLabel")}</label>
                   <select value={aiBloomLevel} onChange={e => setAiBloomLevel(e.target.value)} className="w-full bg-white border-2 border-purple-100 rounded-xl px-4 py-2 outline-none focus:border-purple-400">
-                    <option value="Remembering">Remembering</option>
-                    <option value="Understanding">Understanding</option>
-                    <option value="Applying">Applying</option>
-                    <option value="Analyzing">Analyzing</option>
-                    <option value="Evaluating">Evaluating</option>
-                    <option value="Creating">Creating</option>
+                    <option value="Remembering">{t('bloomRemembering')}</option>
+                    <option value="Understanding">{t('bloomUnderstanding')}</option>
+                    <option value="Applying">{t('bloomApplying')}</option>
+                    <option value="Analyzing">{t('bloomAnalyzing')}</option>
+                    <option value="Evaluating">{t('bloomEvaluating')}</option>
+                    <option value="Creating">{t('bloomCreating')}</option>
                   </select>
                 </div>
                 <div>

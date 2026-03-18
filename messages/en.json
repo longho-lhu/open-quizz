@@ -15,7 +15,7 @@
     "title": "Create, Play, and Learn Together!",
     "subtitle": "The ultimate gamified assessment tool for interactive classrooms.",
     "teacherButton": "I'm a Teacher",
-    "studentButton": "I'm a Student"
+    "studentButton": "I'm a Participant"
   },
   "Login": {
     "title": "Teacher Log In",
@@ -36,7 +36,7 @@
     "hasAccount": "Already have an account?",
     "loginLink": "Log in",
     "accountType": "Account Type",
-    "studentRole": "Student",
+    "studentRole": "Participant",
     "teacherRole": "Teacher"
   },
   "Dashboard": {
@@ -46,6 +46,8 @@
     "hostLive": "Host Live",
     "edit": "Edit",
     "delete": "Delete",
+    "share": "Share",
+    "rename": "Rename",
     "noQuizzes": "No quizzes yet. Create your first one!",
     "confirmDelete": "Are you sure you want to delete this quiz?"
   },
@@ -77,7 +79,7 @@
     "feedbackPartial": "Show Correct/Incorrect Only",
     "feedbackNothing": "Exam Mode (No Feedback, Hide Names)",
     "randomNicknames": "Random Nicknames",
-    "randomNicknamesDesc": "Hide real student names and use funny animal names",
+    "randomNicknamesDesc": "Hide real participant names and use funny animal names",
     "cancel": "Cancel",
     "continueLobby": "Continue to Lobby",
     "joinGame": "Join Game",
@@ -88,7 +90,7 @@
     "backSettings": "Settings",
     "startGame": "Start Game",
     "liveGameplay": "Live Gameplay",
-    "liveGameplayDesc": "Students are answering at their own pace...",
+    "liveGameplayDesc": "Participants are answering at their own pace...",
     "endEarly": "End Early",
     "liveLeaderboard": "Live Leaderboard",
     "answered": "{done} / {total} answered",
@@ -96,6 +98,17 @@
     "winner": "Winner",
     "finalLeaderboard": "Final Leaderboard",
     "backDashboard": "Back to Dashboard",
+    "timeoutWaitTitle": "Action on Timeout",
+    "timeoutWaitDesc": "What happens when the question timer runs out",
+    "timeoutWaitOption0": "Auto-forward (0 pts)",
+    "timeoutWaitOption1": "Wait for answer (0 pts)",
+    "musicThemeTitle": "Lobby Music",
+    "musicThemeDesc": "Background music for Lobby & Leaderboard",
+    "musicThemeNone": "No Music",
+    "musicTheme1": "Theme 1",
+    "musicTheme2": "Theme 2",
+    "duplicateDeviceWarning": "Multiple accounts detected on the same device",
+    "kickParticipant": "Remove Participant",
     "pts": "pts"
   },
   "Play": {
@@ -113,6 +126,9 @@
     "answerLogged": "Answer Logged",
     "hiddenFeedback": "Hidden Feedback",
     "examModeOn": "Exam mode is on. Contact your teacher for results.",
+    "yourScore": "Your Score",
+    "yourRank": "Your Rank",
+    "leaderboard": "Leaderboard",
     "pts": "pts"
   },
   "Settings": {
@@ -171,7 +187,13 @@
     "addQuestionBtn": "+ Add New Question",
     "saveQuizBtn": "Save Quiz",
     "updateQuizBtn": "Update Quiz",
-    "savingBtn": "Saving..."
+    "savingBtn": "Saving...",
+    "bloomRemembering": "Remembering",
+    "bloomUnderstanding": "Understanding",
+    "bloomApplying": "Applying",
+    "bloomAnalyzing": "Analyzing",
+    "bloomEvaluating": "Evaluating",
+    "bloomCreating": "Creating"
   },
   "Join": {
     "title": "Join a Quiz",

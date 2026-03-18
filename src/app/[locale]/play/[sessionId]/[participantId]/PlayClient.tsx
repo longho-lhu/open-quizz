@@ -33,10 +33,15 @@ export default function PlayClient({ sessionId, participantId }: any) {
 
   // Local Timer Logic 
   useEffect(() => {
-    if (data?.session?.status === "IN_PROGRESS" && !feedback && quiz) {
+    setTimeLeft(timeLimitMs);
+  }, [currentIdx, timeLimitMs]);
+
+  useEffect(() => {
+    const status = data?.session?.status;
+    const timeoutWait = data?.session?.timeoutWait;
+    
+    if (status === "IN_PROGRESS" && !feedback && quiz) {
       if (currentIdx < quiz.questions.length) {
-        setTimeLeft(timeLimitMs);
-        
         if (timerRef.current) clearInterval(timerRef.current);
         
         timerRef.current = setInterval(() => {
@@ -44,7 +49,7 @@ export default function PlayClient({ sessionId, participantId }: any) {
             const newTime = prev - 50;
             if (newTime <= 0) {
               if (timerRef.current) clearInterval(timerRef.current);
-              handleTimeout();
+              if (!timeoutWait) handleTimeout();
               return 0;
             }
             return newTime;
@@ -52,10 +57,12 @@ export default function PlayClient({ sessionId, participantId }: any) {
         }, 50);
       }
     }
+    
     return () => {
        if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [data?.session?.status, currentIdx, feedback, quiz, timeLimitMs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.session?.status, currentIdx, feedback]);
 
   const nextQuestion = () => {
     setFeedback(null);
@@ -89,6 +96,8 @@ export default function PlayClient({ sessionId, participantId }: any) {
 
   // If game is over by teacher OR student finished all questions
   if (session.status === "FINISHED" || (quiz && currentIdx >= quiz.questions.length)) {
+    const rank = data.leaderboard?.findIndex((p: any) => p.id === participant.id) + 1;
+
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
         <h1 className="text-5xl font-black text-brand-dark mb-4 drop-shadow-sm">{t("allDone")}</h1>
@@ -96,9 +105,32 @@ export default function PlayClient({ sessionId, participantId }: any) {
              <p className="text-gray-500 font-bold text-xl mt-6">{t("examModeOn")}</p>
         ) : (
            <>
-             <p className="text-3xl font-bold text-gray-600 mb-8">{t("youScored")}</p>
-             <div className="bg-gradient-to-tr from-brand-purple to-pink-500 text-white text-6xl font-black px-12 py-8 rounded-3xl shadow-2xl transform rotate-2 animate-bounce-in">
-                {participant.score} {t("pts")}
+             <div className="flex items-center gap-4 sm:gap-8 justify-center mb-8 w-full max-w-lg">
+                <div className="flex-1 flex flex-col items-center bg-white border-4 border-gray-100 rounded-3xl p-6 shadow-sm">
+                   <span className="text-gray-400 font-bold mb-2 uppercase tracking-wide text-sm">{t("yourScore")}</span>
+                   <div className="text-brand-purple text-4xl sm:text-5xl font-black drop-shadow-sm">
+                       {participant.score} <span className="text-xl">{t("pts")}</span>
+                   </div>
+                </div>
+                <div className="flex-1 flex flex-col items-center bg-white border-4 border-gray-100 rounded-3xl p-6 shadow-sm">
+                   <span className="text-gray-400 font-bold mb-2 uppercase tracking-wide text-sm">{t("yourRank")}</span>
+                   <div className="text-brand-yellow text-4xl sm:text-5xl font-black drop-shadow-sm">
+                       #{rank || "?"}
+                   </div>
+                </div>
+             </div>
+
+             <div className="w-full max-w-lg bg-white rounded-3xl p-6 shadow-md text-left border-4 border-gray-100 mt-4 max-h-64 overflow-y-auto">
+                <h2 className="text-xl font-bold mb-4 text-gray-800">{t("leaderboard")}</h2>
+                {data.leaderboard?.map((p: any, i: number) => (
+                   <div key={p.id} className={`flex justify-between items-center p-4 rounded-2xl mb-3 font-bold ${p.id === participant.id ? 'bg-brand-purple text-white shadow-md transform scale-[1.02] transition border-none' : 'bg-gray-50 text-gray-700 border-2 border-gray-100'}`}>
+                      <span className="flex items-center gap-3">
+                        <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm ${p.id === participant.id ? 'bg-white text-brand-purple' : 'bg-gray-200 text-gray-500'}`}>{i+1}</span>
+                        {session.randomNicknames ? p.randomName : p.nickname}
+                      </span>
+                      <span>{p.score} {t("pts")}</span>
+                   </div>
+                ))}
              </div>
            </>
         )}
@@ -116,7 +148,7 @@ export default function PlayClient({ sessionId, participantId }: any) {
     const progressPercent = (timeLeft / timeLimitMs) * 100;
 
     const handleOptionSelect = async (optionId: string) => {
-      if (answering || timeLeft <= 0 || feedback) return;
+      if (answering || feedback) return;
       
       if (timerRef.current) clearInterval(timerRef.current);
       setAnswering(true);
@@ -219,10 +251,9 @@ export default function PlayClient({ sessionId, participantId }: any) {
               return (
                 <button
                   key={opt.id}
-                  disabled={answering || timeLeft <= 0}
+                  disabled={answering}
                   onClick={() => handleOptionSelect(opt.id)}
-                  className={`${colorClass} text-white text-3xl md:text-4xl font-black py-12 px-6 rounded-3xl border-b-8 active:border-b-0 active:translate-y-2 transition-all flex items-center justify-center break-words drop-shadow-md`}
-                >
+                  className={`${colorClass} text-white text-3xl md:text-4xl font-black py-12 px-6 rounded-3xl border-b-8 active:border-b-0 active:translate-y-2 transition-all flex items-center justify-center break-words drop-shadow-md`}>
                   <span className="drop-shadow-md">{opt.text}</span>
                 </button>
               );

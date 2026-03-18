@@ -70,11 +70,14 @@ export const optionsRelations = relations(optionsTable, ({ one }) => ({
 export const liveSessionsTable = sqliteTable("live_sessions", {
   id: text("id").primaryKey(),
   quizId: text("quiz_id").notNull().references(() => quizzesTable.id, { onDelete: 'cascade' }),
+  hostId: text("host_id").references(() => usersTable.id),
   code: text("code").notNull().unique(),
   name: text("name"), // Optional custom name like "Class 10A2"
   status: text("status").notNull().default("WAITING"), // WAITING, IN_PROGRESS, FINISHED
   feedbackLevel: text("feedback_level").notNull().default("SHOW_ALL"), // SHOW_ALL, SHOW_CORRECT_INCORRECT, SHOW_NOTHING
   randomNicknames: integer("random_nicknames", { mode: "boolean" }).notNull().default(false),
+  timeoutWait: integer("timeout_wait", { mode: "boolean" }).notNull().default(false),
+  musicTheme: text("music_theme").notNull().default("s1.MP3"),
   currentQuestionIndex: integer("current_question_index").notNull().default(-1),
   startedAt: integer("started_at", { mode: "timestamp" }),
 });
@@ -85,6 +88,7 @@ export const participantsTable = sqliteTable("participants", {
   sessionId: text("session_id").notNull().references(() => liveSessionsTable.id),
   nickname: text("nickname").notNull(),
   randomName: text("random_name").notNull(),
+  deviceId: text("device_id"),
   score: integer("score").notNull().default(0),
 });
 
@@ -130,5 +134,19 @@ export const participantAnswersRelations = relations(participantAnswersTable, ({
   option: one(optionsTable, {
     fields: [participantAnswersTable.optionId],
     references: [optionsTable.id],
+  }),
+}));
+
+export const quizSharesTable = sqliteTable("quiz_shares", {
+  id: text("id").primaryKey(),
+  quizId: text("quiz_id").notNull().references(() => quizzesTable.id, { onDelete: 'cascade' }),
+  shareToEmail: text("share_to_email").notNull(),
+  sharedAt: integer("shared_at", { mode: "timestamp" }).notNull(),
+});
+
+export const quizSharesRelations = relations(quizSharesTable, ({ one }) => ({
+  quiz: one(quizzesTable, {
+    fields: [quizSharesTable.quizId],
+    references: [quizzesTable.id],
   }),
 }));

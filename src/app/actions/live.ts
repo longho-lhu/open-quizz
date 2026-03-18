@@ -1,7 +1,7 @@
 "use server";
 import { db } from "@/lib/db";
-import { liveSessionsTable, participantsTable, participantAnswersTable, quizzesTable } from "@/lib/schema";
-import { eq, inArray, desc } from "drizzle-orm";
+import { liveSessionsTable, participantsTable, participantAnswersTable, quizzesTable, quizSharesTable, usersTable } from "@/lib/schema";
+import { eq, inArray, desc, and, or } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
@@ -9,16 +9,41 @@ export async function hostQuizAction(quizId: string) {
   const session = await getSession();
   if (!session || session.role !== "TEACHER") throw new Error("Unauthorized");
 
+  const quiz = await db.query.quizzesTable.findFirst({ where: eq(quizzesTable.id, quizId) });
+  if (!quiz) throw new Error("Quiz not found");
+
+  if (quiz.creatorId !== session.id) {
+      const user = await db.query.usersTable.findFirst({ where: eq(usersTable.id, session.id) });
+      const shared = await db.query.quizSharesTable.findFirst({
+         where: and(eq(quizSharesTable.quizId, quizId), eq(quizSharesTable.shareToEmail, user!.email))
+      });
+      if (!shared) throw new Error("Unauthorized");
+  }
+
   const sessionId = Math.random().toString(36).slice(2);
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
   await db.insert(liveSessionsTable).values({
     id: sessionId,
     quizId,
+    hostId: session.id,
     code,
     status: "WAITING",
   });
 
   return sessionId;
+}
+
+// Internal helper to verify ownership
+async function verifyOwnership(sessionId: string, userId: string) {
+  const ls = await db.query.liveSessionsTable.findFirst({ where: eq(liveSessionsTable.id, sessionId) });
+  if (!ls) throw new Error("Not found");
+
+  if (ls.hostId) {
+      if (ls.hostId !== userId) throw new Error("Unauthorized");
+  } else {
+      const q = await db.query.quizzesTable.findFirst({ where: eq(quizzesTable.id, ls.quizId) });
+      if (!q || q.creatorId !== userId) throw new Error("Unauthorized");
+  }
 }
 
 export async function getSessionStatus(sessionId: string) {
@@ -64,6 +89,7 @@ export async function endGameAction(sessionId: string) {
 export async function forceEndSessionAction(sessionId: string) {
   const session = await getSession();
   if (!session || session.role !== "TEACHER") throw new Error("Unauthorized");
+  await verifyOwnership(sessionId, session.id);
   await db.update(liveSessionsTable)
     .set({ status: "FINISHED" })
     .where(eq(liveSessionsTable.id, sessionId));
@@ -79,10 +105,16 @@ export async function getTeacherSessions() {
   });
   
   const quizIds = quizzes.map((q: any) => q.id);
-  if (quizIds.length === 0) return [];
+
+  let conditions;
+  if (quizIds.length > 0) {
+      conditions = or(inArray(liveSessionsTable.quizId, quizIds), eq(liveSessionsTable.hostId, session.id));
+  } else {
+      conditions = eq(liveSessionsTable.hostId, session.id);
+  }
 
   const sessions = await db.query.liveSessionsTable.findMany({
-    where: inArray(liveSessionsTable.quizId, quizIds),
+    where: conditions,
     with: {
       quiz: true,
       participants: {
@@ -101,6 +133,7 @@ export async function getTeacherSessions() {
 export async function renameSessionAction(sessionId: string, name: string) {
   const session = await getSession();
   if (!session || session.role !== "TEACHER") throw new Error("Unauthorized");
+  await verifyOwnership(sessionId, session.id);
   await db.update(liveSessionsTable).set({ name }).where(eq(liveSessionsTable.id, sessionId));
   revalidatePath("/teacher/sessions");
 }
@@ -108,6 +141,7 @@ export async function renameSessionAction(sessionId: string, name: string) {
 export async function deleteSessionAction(sessionId: string) {
   const session = await getSession();
   if (!session || session.role !== "TEACHER") throw new Error("Unauthorized");
+  await verifyOwnership(sessionId, session.id);
 
   const parts = await db.query.participantsTable.findMany({ where: eq(participantsTable.sessionId, sessionId) });
   const pIds = parts.map(p => p.id);
@@ -120,15 +154,17 @@ export async function deleteSessionAction(sessionId: string) {
   revalidatePath("/teacher/sessions");
 }
 
-export async function updateSessionSettingsAction(sessionId: string, feedbackLevel: string, randomNicknames: boolean) {
+export async function updateSessionSettingsAction(sessionId: string, feedbackLevel: string, randomNicknames: boolean, timeoutWait: boolean = false, musicTheme: string = "none") {
   const session = await getSession();
   if (!session || session.role !== "TEACHER") throw new Error("Unauthorized");
-  await db.update(liveSessionsTable).set({ feedbackLevel, randomNicknames }).where(eq(liveSessionsTable.id, sessionId));
+  await verifyOwnership(sessionId, session.id);
+  await db.update(liveSessionsTable).set({ feedbackLevel, randomNicknames, timeoutWait, musicTheme }).where(eq(liveSessionsTable.id, sessionId));
 }
 
 export async function resetSessionAction(sessionId: string) {
   const session = await getSession();
   if (!session || session.role !== "TEACHER") throw new Error("Unauthorized");
+  await verifyOwnership(sessionId, session.id);
   
   const parts = await db.query.participantsTable.findMany({ where: eq(participantsTable.sessionId, sessionId) });
   const pIds = parts.map(p => p.id);

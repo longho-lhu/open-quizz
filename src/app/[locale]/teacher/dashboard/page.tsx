@@ -4,9 +4,11 @@ import HostLiveButton from "@/components/HostLiveButton";
 import QuizAdminButtons from "@/components/QuizAdminButtons";
 import { getTranslations } from "next-intl/server";
 import { FiFolder, FiPlusCircle } from "react-icons/fi";
+import { getSession } from "@/lib/auth";
 
 export default async function TeacherDashboard() {
   const t = await getTranslations("Dashboard");
+  const session = await getSession();
   const quizzes = await getQuizzes();
 
   return (
@@ -37,10 +39,13 @@ export default async function TeacherDashboard() {
               <div className="h-32 bg-brand-light rounded-xl mb-4 relative flex items-center justify-center border-2 border-brand-purple/20 group-hover:bg-brand-purple/10 transition-colors">
                 <span className="text-5xl font-black text-brand-purple opacity-50">Quiz</span>
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 px-3 py-1 rounded-full shadow-sm backdrop-blur-sm border border-brand-purple/20">
-                   <QuizAdminButtons quizId={quiz.id} currentTitle={quiz.title} />
+                   <QuizAdminButtons quizId={quiz.id} currentTitle={quiz.title} isOwner={quiz.creatorId === session?.id} />
                 </div>
               </div>
-              <h3 className="text-xl font-bold truncate">{quiz.title}</h3>
+              <h3 className="text-xl font-bold truncate flex items-center gap-2">
+                 {quiz.title}
+                 {quiz.creatorId !== session?.id && <span className="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full border border-blue-200 uppercase tracking-wide">Shared</span>}
+              </h3>
               <p className="text-gray-500 line-clamp-2 text-sm mt-1 flex-1">
                 {quiz.description || "No description provided."}
               </p>

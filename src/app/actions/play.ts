@@ -4,7 +4,16 @@ import { quizzesTable, liveSessionsTable, participantsTable, participantAnswersT
 import { eq, and, not, desc } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
-export async function joinQuizWithNicknameAction(code: string, nickname: string) {
+export async function kickParticipantAction(participantId: string) {
+  try {
+    await db.delete(participantsTable).where(eq(participantsTable.id, participantId));
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
+
+export async function joinQuizWithNicknameAction(code: string, nickname: string, deviceId: string = "unknown") {
   const codeUpper = code.toUpperCase();
   const activeSession = await db.query.liveSessionsTable.findFirst({
     where: eq(liveSessionsTable.code, codeUpper),
@@ -27,6 +36,7 @@ export async function joinQuizWithNicknameAction(code: string, nickname: string)
     sessionId: activeSession.id,
     nickname,
     randomName,
+    deviceId,
   });
 
   return { success: true, sessionId: activeSession.id, participantId };
@@ -58,7 +68,13 @@ export async function getParticipantState(sessionId: string, participantId: stri
     where: eq(participantAnswersTable.participantId, participantId),
   });
 
-  return { session, participant, answers };
+  const leaderboard = await db.query.participantsTable.findMany({
+    where: eq(participantsTable.sessionId, sessionId),
+    columns: { id: true, nickname: true, randomName: true, score: true },
+    orderBy: [desc(participantsTable.score)],
+  });
+
+  return { session, participant, answers, leaderboard };
 }
 
 export async function submitAnswerAction(participantId: string, questionId: string, optionId: string, timeLeft: number, timeLimit: number) {
@@ -80,9 +96,13 @@ export async function submitAnswerAction(participantId: string, questionId: stri
 
   let points = 0;
   if (option.isCorrect) {
-    // 100 to 1000 points based on time left
-    const ratio = Math.max(0, Math.min(1, timeLeft / timeLimit));
-    points = Math.max(100, Math.floor(ratio * 1000));
+    if (timeLeft <= 0) {
+      points = 0;
+    } else {
+      // 100 to 1000 points based on time left
+      const ratio = Math.max(0, Math.min(1, timeLeft / timeLimit));
+      points = Math.max(100, Math.floor(ratio * 1000));
+    }
   }
 
   await db.insert(participantAnswersTable).values({

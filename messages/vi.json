@@ -15,7 +15,7 @@
     "title": "Tạo, Chơi và Học Cùng Nhau!",
     "subtitle": "Công cụ đánh giá trò chơi hoá tuyệt vời nhất cho lớp học tương tác.",
     "teacherButton": "Tôi là Giáo viên",
-    "studentButton": "Tôi là Học sinh"
+    "studentButton": "Tôi là Người tham gia"
   },
   "Login": {
     "title": "Đăng nhập Giáo viên",
@@ -36,7 +36,7 @@
     "hasAccount": "Đã có tài khoản?",
     "loginLink": "Đăng nhập",
     "accountType": "Vai trò",
-    "studentRole": "Học sinh",
+    "studentRole": "Người tham gia",
     "teacherRole": "Giáo viên"
   },
   "Dashboard": {
@@ -46,6 +46,8 @@
     "hostLive": "Mở Phòng Chơi",
     "edit": "Sửa",
     "delete": "Xoá",
+    "share": "Chia sẻ",
+    "rename": "Đổi tên",
     "noQuizzes": "Chưa có quiz nào. Hãy tạo ngay 1 cái!",
     "confirmDelete": "Bạn có chắc chắn muốn xoá bài Quiz này?"
   },
@@ -77,26 +79,37 @@
     "feedbackPartial": "Chỉ hiện Đúng/Sai",
     "feedbackNothing": "Chế độ kiểm tra (Nhắm mắt, Ẩn tên)",
     "randomNicknames": "Biệt danh ẩn danh",
-    "randomNicknamesDesc": "Bảo mật tên thật học sinh bằng tên các con vật ngẫu nhiên",
+    "randomNicknamesDesc": "Bảo mật tên thật người tham gia bằng tên các con vật ngẫu nhiên",
     "cancel": "Huỷ",
     "continueLobby": "Tới Phòng Chờ",
     "joinGame": "Tham Gia Game",
     "enterCodeAt": "Nhập mã phòng trực tiếp tại",
-    "playersJoined": "{count} học sinh đã vào",
+    "playersJoined": "{count} người tham gia đã vào",
     "nicknamesHidden": "Đã Tắt Tên Thật",
     "waitingPlayers": "Đang chờ người chơi vào phòng...",
     "backSettings": "Cài Đặt",
     "startGame": "Bắt Đầu",
     "liveGameplay": "Đang Phân Tài Cao Thấp",
-    "liveGameplayDesc": "Học sinh đang tự trả lời câu hỏi trên máy...",
+    "liveGameplayDesc": "Người tham gia đang tự trả lời câu hỏi trên máy...",
     "endEarly": "Dừng Sớm",
     "liveLeaderboard": "Bảng Xếp Hạng Trực Tiếp",
     "answered": "Đã xong {done}/{total}",
     "gameOver": "Trò Chơi Kết Thúc!",
     "winner": "Nhà Vô Địch",
-    "finalLeaderboard": "Bảng Xếp Hạng Chung Cuộc",
-    "backDashboard": "Về trang chủ",
-    "pts": "điểm"
+    "finalLeaderboard": "Bảng Xếp Hạng Cuối Cùng",
+    "backDashboard": "Về Bảng Điều Khiển",
+    "pts": "điểm",
+    "timeoutWaitTitle": "Khi hết thời gian",
+    "timeoutWaitDesc": "Điều gì xảy ra khi thời gian trả lời kết thúc",
+    "timeoutWaitOption0": "Tính 0 điểm / Tự qua câu",
+    "timeoutWaitOption1": "Đợi người tham gia trả lời (0 điểm)",
+    "musicThemeTitle": "Nhạc nền",
+    "musicThemeDesc": "Nhạc phát ở phòng chờ và bảng xếp hạng",
+    "musicThemeNone": "Không phát nhạc",
+    "musicTheme1": "Nhạc nền 1",
+    "musicTheme2": "Nhạc nền 2",
+    "duplicateDeviceWarning": "Nhiều tài khoản dùng chung một thiết bị",
+    "kickParticipant": "Xoá người tham gia"
   },
   "Play": {
     "connecting": "Đang kết nối...",
@@ -113,6 +126,9 @@
     "answerLogged": "Đã Ghi Nhận Điểm",
     "hiddenFeedback": "Chế độ kiểm tra",
     "examModeOn": "Chế độ Kiểm tra đã bật. Vui lòng xem điểm sau giờ học.",
+    "yourScore": "Điểm số",
+    "yourRank": "Xếp hạng",
+    "leaderboard": "Bảng xếp hạng",
     "pts": "đ"
   },
   "Settings": {
@@ -171,7 +187,13 @@
     "addQuestionBtn": "+ Thêm Câu Hỏi Mới",
     "saveQuizBtn": "Lưu Quiz",
     "updateQuizBtn": "Cập nhật Quiz",
-    "savingBtn": "Đang lưu..."
+    "savingBtn": "Đang lưu...",
+    "bloomRemembering": "Nhớ (Remember)",
+    "bloomUnderstanding": "Hiểu (Understand)",
+    "bloomApplying": "Vận dụng (Apply)",
+    "bloomAnalyzing": "Phân tích (Analyze)",
+    "bloomEvaluating": "Đánh giá (Evaluate)",
+    "bloomCreating": "Sáng tạo (Create)"
   },
   "Join": {
     "title": "Tham Gia",

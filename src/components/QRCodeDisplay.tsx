@@ -2,13 +2,16 @@
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState } from "react";
 import { useLocale } from "next-intl";
+import { createPortal } from "react-dom";
 
 export default function QRCodeDisplay({ code }: { code: string }) {
   const [url, setUrl] = useState("");
   const [isEnlarged, setIsEnlarged] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const locale = useLocale();
 
   useEffect(() => {
+    setMounted(true);
     setUrl(`${window.location.origin}/${locale}/join?code=${code}`);
   }, [code, locale]);
 
@@ -25,7 +28,7 @@ export default function QRCodeDisplay({ code }: { code: string }) {
         <p className="text-center font-bold text-gray-600 mt-4 text-sm tracking-widest uppercase">SCAN TO JOIN</p>
       </div>
 
-      {isEnlarged && (
+      {isEnlarged && mounted && createPortal(
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 cursor-zoom-out animate-in fade-in duration-200"
           onClick={() => setIsEnlarged(false)}
@@ -42,7 +45,8 @@ export default function QRCodeDisplay({ code }: { code: string }) {
             <p className="text-center font-black text-brand-dark mt-8 text-3xl md:text-5xl tracking-widest uppercase drop-shadow-sm">SCAN TO JOIN</p>
             <p className="text-gray-400 font-bold mt-4 text-lg bg-gray-100 px-4 py-2 rounded-full">Click anywhere to close</p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

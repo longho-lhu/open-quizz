@@ -1,13 +1,30 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quizzesTable, usersTable, questionsTable, optionsTable, liveSessionsTable, participantsTable, participantAnswersTable } from "@/lib/schema";
+import { quizzesTable, usersTable, questionsTable, optionsTable, liveSessionsTable, participantsTable, participantAnswersTable, quizSharesTable } from "@/lib/schema";
 import { revalidatePath } from "next/cache";
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray, or, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
 export async function getQuizzes() {
+  const session = await getSession();
+  if (!session || session.role !== "TEACHER") return [];
+
+  const user = await db.query.usersTable.findFirst({ where: eq(usersTable.id, session.id) });
+  if (!user || !user.email) return [];
+
+  const shared = await db.query.quizSharesTable.findMany({ where: eq(quizSharesTable.shareToEmail, user.email) });
+  const sharedQuizIds = shared.map(s => s.quizId);
+
+  let whereClause;
+  if (sharedQuizIds.length > 0) {
+      whereClause = or(eq(quizzesTable.creatorId, session.id), inArray(quizzesTable.id, sharedQuizIds));
+  } else {
+      whereClause = eq(quizzesTable.creatorId, session.id);
+  }
+
   const allQuizzes = await db.query.quizzesTable.findMany({
+    where: whereClause,
     orderBy: [desc(quizzesTable.createdAt)],
     with: {
       questions: true,
@@ -148,10 +165,11 @@ export async function updateQuizAction(formData: FormData): Promise<CreateQuizSt
     // Update the Quiz Metadata
     await db.update(quizzesTable).set({ title, description }).where(eq(quizzesTable.id, quizId));
 
-    // Delete existing questions and options
+    // Delete existing questions and options. Note: we must first delete participant answers mapping to these questions to satisfy FK constraints.
     const existingQuestions = await db.query.questionsTable.findMany({ where: eq(questionsTable.quizId, quizId) });
     const qIds = existingQuestions.map((q: any) => q.id);
     if (qIds.length > 0) {
+        await db.delete(participantAnswersTable).where(inArray(participantAnswersTable.questionId, qIds));
         await db.delete(optionsTable).where(inArray(optionsTable.questionId, qIds));
         await db.delete(questionsTable).where(inArray(questionsTable.id, qIds));
     }
@@ -188,6 +206,32 @@ export async function renameQuizAction(quizId: string, title: string) {
   const session = await getSession();
   if (!session || session.role !== "TEACHER") throw new Error("Unauthorized");
   await db.update(quizzesTable).set({ title }).where(eq(quizzesTable.id, quizId));
+  revalidatePath("/teacher/dashboard");
+  return { success: true };
+}
+
+export async function shareQuizAction(quizId: string, email: string) {
+  const session = await getSession();
+  if (!session || session.role !== "TEACHER") throw new Error("Unauthorized");
+
+  const quiz = await db.query.quizzesTable.findFirst({ where: eq(quizzesTable.id, quizId) });
+  if (!quiz || quiz.creatorId !== session.id) throw new Error("Unauthorized");
+
+  if (!email || !email.includes("@")) throw new Error("Invalid email format");
+
+  const existing = await db.query.quizSharesTable.findFirst({
+    where: and(eq(quizSharesTable.quizId, quizId), eq(quizSharesTable.shareToEmail, email))
+  });
+  
+  if (existing) return { success: true };
+
+  await db.insert(quizSharesTable).values({
+    id: Math.random().toString(36).slice(2),
+    quizId,
+    shareToEmail: email,
+    sharedAt: new Date(),
+  });
+
   revalidatePath("/teacher/dashboard");
   return { success: true };
 }

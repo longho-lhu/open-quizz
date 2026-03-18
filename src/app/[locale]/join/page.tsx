@@ -24,9 +24,15 @@ function JoinQuizForm() {
     e.preventDefault();
     if (!code.trim() || !nickname.trim()) return;
 
+    let deviceId = localStorage.getItem("quizz_device_id");
+    if (!deviceId) {
+      deviceId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem("quizz_device_id", deviceId);
+    }
+
     setLoading(true);
     setError(null);
-    const res = await joinQuizWithNicknameAction(code.trim(), nickname.trim());
+    const res = await joinQuizWithNicknameAction(code.trim(), nickname.trim(), deviceId);
 
     if (res.error) {
       setError(res.error);
@@ -38,6 +44,11 @@ function JoinQuizForm() {
 
   return (
     <div className="flex-1 flex items-center justify-center p-4 min-h-[70vh]">
+      <style>{`
+        #main-nav { display: none !important; }
+        #main-sidebar { display: none !important; }
+        #main-content { padding: 0 !important; max-width: 100% !important; display: flex; flex-direction: column; min-height: 100vh;}
+      `}</style>
       <div className="bg-white rounded-3xl p-8 shadow-xl max-w-md w-full border-4 border-gray-100 text-center space-y-8">
         <h1 className="text-4xl font-black text-brand-purple">{t('title')}</h1>
         
