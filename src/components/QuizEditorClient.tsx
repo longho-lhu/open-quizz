@@ -25,6 +25,7 @@ export default function QuizEditorClient({
   const [aiText, setAiText] = useState("");
   const [aiCount, setAiCount] = useState(3);
   const [aiBloomLevel, setAiBloomLevel] = useState("Understanding");
+  const [aiLanguage, setAiLanguage] = useState("Vietnamese");
   const [aiFile, setAiFile] = useState<File | null>(null);
   const [showAiModal, setShowAiModal] = useState(false);
 
@@ -122,6 +123,7 @@ export default function QuizEditorClient({
     if (aiText) formData.append("documentText", aiText);
     formData.append("count", aiCount.toString());
     formData.append("bloomLevel", aiBloomLevel);
+    formData.append("language", aiLanguage);
     if (aiFile) formData.append("file", aiFile);
 
     const res = await generateQuizQuestionsAction(formData);
@@ -244,7 +246,7 @@ export default function QuizEditorClient({
                   <input type="number" min={1} max={50} value={aiCount} onChange={e => setAiCount(Number(e.target.value))} className="w-full bg-white border-2 border-purple-100 rounded-xl px-4 py-2 outline-none focus:border-purple-400" />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">{t("bloomLevelLabel")}</label>
                   <select value={aiBloomLevel} onChange={e => setAiBloomLevel(e.target.value)} className="w-full bg-white border-2 border-purple-100 rounded-xl px-4 py-2 outline-none focus:border-purple-400">
@@ -254,6 +256,17 @@ export default function QuizEditorClient({
                     <option value="Analyzing">{t('bloomAnalyzing')}</option>
                     <option value="Evaluating">{t('bloomEvaluating')}</option>
                     <option value="Creating">{t('bloomCreating')}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Language</label>
+                  <select value={aiLanguage} onChange={e => setAiLanguage(e.target.value)} className="w-full bg-white border-2 border-purple-100 rounded-xl px-4 py-2 outline-none focus:border-purple-400">
+                    <option value="Vietnamese">Tiếng Việt</option>
+                    <option value="English">English</option>
+                    <option value="French">Français</option>
+                    <option value="Spanish">Español</option>
+                    <option value="German">Deutsch</option>
+                    <option value="Japanese">日本語</option>
                   </select>
                 </div>
                 <div>
@@ -370,6 +383,25 @@ export default function QuizEditorClient({
           </div>
         </form>
       </div>
+
+      {aiLoading && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl relative overflow-hidden transform transition-all scale-100 animate-in zoom-in-95 duration-200">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-purple-100">
+              <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 w-full animate-pulse"></div>
+            </div>
+            <div className="w-20 h-20 rounded-full bg-purple-50 flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+            </div>
+            <h3 className="text-2xl font-black text-gray-800 mb-3 tracking-tight">
+              {t("generatingBtn")}
+            </h3>
+            <p className="text-gray-500 font-medium text-sm leading-relaxed">
+              Our AI is analyzing your topic and crafting high-quality questions. This might take a moment...
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

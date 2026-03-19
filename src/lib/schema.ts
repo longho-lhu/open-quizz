@@ -8,6 +8,7 @@ export const usersTable = sqliteTable("users", {
   password: text("password"),
   avatar: text("avatar"),
   geminiApiKey: text("gemini_api_key"),
+  geminiModel: text("gemini_model").default("gemini-3.1-flash-lite-preview"),
   role: text("role").notNull().default("STUDENT"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });

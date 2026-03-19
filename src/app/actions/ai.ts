@@ -1,26 +1,40 @@
 "use server";
 
-import { generateObject } from "ai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { z } from "zod";
+import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { usersTable } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
-const questionSchema = z.object({
-  questions: z.array(
-    z.object({
-      text: z.string().describe("The question text"),
-      options: z.array(
-        z.object({
-          text: z.string().describe("Option text"),
-          isCorrect: z.boolean().describe("Whether this option is the correct answer"),
-        })
-      ).length(4).describe("Must have exactly 4 options with exactly 1 correct option"),
-    })
-  )
-});
+const responseSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    questions: {
+      type: Type.ARRAY,
+      description: "List of multiple choice questions",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          text: { type: Type.STRING, description: "The question text" },
+          options: {
+            type: Type.ARRAY,
+            description: "Must have exactly 4 options with exactly 1 correct option",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                text: { type: Type.STRING, description: "Option text" },
+                isCorrect: { type: Type.BOOLEAN, description: "Whether this option is the correct answer" }
+              },
+              required: ["text", "isCorrect"]
+            }
+          }
+        },
+        required: ["text", "options"]
+      }
+    }
+  },
+  required: ["questions"]
+};
 
 export async function generateQuizQuestionsAction(formData: FormData) {
   const session = await getSession();
@@ -38,6 +52,7 @@ export async function generateQuizQuestionsAction(formData: FormData) {
   const count = Number(formData.get("count")) || 3;
   if (count > 50) return { error: "Maximum 50 questions allowed per request." };
   const bloomLevel = formData.get("bloomLevel") as string || "Understanding";
+  const language = formData.get("language") as string || "Vietnamese";
   const file = formData.get("file") as File | null;
   let documentText = formData.get("documentText") as string || "";
 
@@ -63,23 +78,27 @@ export async function generateQuizQuestionsAction(formData: FormData) {
     return { error: "Please provide a topic or upload a document." };
   }
 
-  const google = createGoogleGenerativeAI({
-    apiKey: user.geminiApiKey,
-  });
+  const ai = new GoogleGenAI({ apiKey: user.geminiApiKey });
 
   const prompt = `You are an expert educator.
 Generate ${count} multiple choice questions corresponding to the Cognitive Level of "${bloomLevel}" in Bloom's Taxonomy.
+The questions and answers MUST BE written in ${language}.
 Each question must have exactly 4 options with only 1 correct answer.
 ${topic ? `Topic: ${topic}\n` : ""}
 ${documentText ? `Based on the following document content:\n${documentText.substring(0, 40000)}` : ""}`;
 
   try {
-    const { object } = await generateObject({
-      model: google("gemini-1.5-flash"),
-      schema: questionSchema,
-      prompt: prompt,
+    const response = await ai.models.generateContent({
+      model: user?.geminiModel || "gemini-3.1-flash-lite-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: responseSchema,
+      },
     });
     
+    if (!response.text) throw new Error("No response text from Gemini");
+    const object = JSON.parse(response.text);
     return { success: true, questions: object.questions };
   } catch (err: any) {
     console.error("AI Generation Error:", err);

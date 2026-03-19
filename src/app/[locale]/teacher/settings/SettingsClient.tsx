@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { updateProfileAction, updatePasswordAction } from "@/app/actions/user";
 import { updateApiKeyAction } from "@/app/actions/settings";
 
-export default function SettingsClient({ initialName, initialAvatar, initialApiKey, dbUser }: { initialName: string, initialAvatar: string, initialApiKey: string, dbUser?: any }) {
+export default function SettingsClient({ initialName, initialAvatar, initialApiKey, initialModel = "gemini-3.1-flash-lite-preview", dbUser }: { initialName: string, initialAvatar: string, initialApiKey: string, initialModel?: string, dbUser?: any }) {
   const t = useTranslations("Settings");
   
   const [name, setName] = useState(initialName || "");
@@ -217,6 +217,22 @@ export default function SettingsClient({ initialName, initialAvatar, initialApiK
           window.location.reload();
         }} className="space-y-4">
           <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Gemini AI Model</label>
+            <select name="model" defaultValue={initialModel} className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-purple focus:ring-0 outline-none font-bold mb-4">
+              <optgroup label="Fast & Cost-effective">
+                <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite Preview</option>
+                <option value="gemini-3.0-flash">Gemini 3.0 Flash</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-2.0-flash-lite-preview-02-05">Gemini 2.0 Flash Lite</option>
+              </optgroup>
+              <optgroup label="Advanced Reasoning">
+                <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+              </optgroup>
+            </select>
+          </div>
+          <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">Gemini API Key</label>
             <input 
               name="apiKey" 
@@ -226,7 +242,7 @@ export default function SettingsClient({ initialName, initialAvatar, initialApiK
               className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-purple focus:ring-0 outline-none tracking-widest font-bold" 
             />
           </div>
-          <button type="submit" className="btn-primary w-full sm:w-auto px-8 py-3">Save API Key</button>
+          <button type="submit" className="btn-primary w-full sm:w-auto px-8 py-3">Save AI Settings</button>
         </form>
       </div>
     </div>

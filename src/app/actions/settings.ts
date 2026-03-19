@@ -11,8 +11,13 @@ export async function updateApiKeyAction(formData: FormData) {
   if (!session) return { error: "Unauthorized" };
   
   const key = formData.get("apiKey") as string;
+  const model = formData.get("model") as string | null;
+  const updateData: any = {};
+  if (key !== undefined) updateData.geminiApiKey = key;
+  if (model) updateData.geminiModel = model;
+
   await db.update(usersTable)
-    .set({ geminiApiKey: key })
+    .set(updateData)
     .where(eq(usersTable.id, session.id));
 
   revalidatePath("/teacher/settings");
@@ -26,5 +31,8 @@ export async function getApiKey() {
   const user = await db.query.usersTable.findFirst({
     where: eq(usersTable.id, session.id)
   });
-  return user?.geminiApiKey || null;
+  return {
+    apiKey: user?.geminiApiKey || null,
+    model: user?.geminiModel || "gemini-3.1-flash-lite-preview"
+  };
 }

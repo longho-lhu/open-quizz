@@ -30,7 +30,8 @@ export default async function SettingsPage() {
       <SettingsClient 
         initialName={dbUser?.name || session?.name || ""} 
         initialAvatar={dbUser?.avatar || ""} 
-        initialApiKey={currentKey || ""}
+        initialApiKey={currentKey?.apiKey || ""}
+        initialModel={currentKey?.model || "gemini-3.1-flash-lite-preview"}
         dbUser={dbUser}
       />
     </div>
