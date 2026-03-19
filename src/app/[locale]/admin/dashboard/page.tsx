@@ -1,110 +1,99 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { usersTable, quizzesTable } from "@/lib/schema";
-import { deleteUserAction, deleteQuizAction } from "@/app/actions/admin";
-import { desc } from "drizzle-orm";
-import DeleteButton from "@/components/DeleteButton";
+import { usersTable, quizzesTable, questionsTable } from "@/lib/schema";
+import { sql } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
 
-export default async function AdminDashboard() {
+export default async function AdminDashboardPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
     redirect("/login");
   }
 
-  const allUsers = await db.query.usersTable.findMany({
-    orderBy: [desc(usersTable.createdAt)],
-  });
+  const t = await getTranslations("Admin");
 
-  const allQuizzes = await db.query.quizzesTable.findMany({
-    orderBy: [desc(quizzesTable.createdAt)],
-    with: { creator: true },
-  });
+  // Fetch aggregated counts
+  // Total Users
+  const [userResult] = await db.select({ count: sql<number>`count(*)` }).from(usersTable);
+  const totalUsers = userResult.count;
+
+  // Roles distribution
+  const rolesGroup = await db.select({
+    role: usersTable.role,
+    count: sql<number>`count(*)`
+  }).from(usersTable).groupBy(usersTable.role);
+
+  const totalTeachers = rolesGroup.find(r => r.role === 'TEACHER')?.count || 0;
+  const totalStudents = rolesGroup.find(r => r.role === 'STUDENT')?.count || 0;
+
+  // Plans distribution
+  const plansGroup = await db.select({
+    plan: usersTable.plan,
+    count: sql<number>`count(*)`
+  }).from(usersTable).groupBy(usersTable.plan);
+
+  // Quizzes & Questions
+  const [quizResult] = await db.select({ count: sql<number>`count(*)` }).from(quizzesTable);
+  const totalQuizzes = quizResult.count;
+
+  const [questionResult] = await db.select({ count: sql<number>`count(*)` }).from(questionsTable);
+  const totalQuestions = questionResult.count;
+
+  const avgQuestions = totalQuizzes > 0 ? (totalQuestions / totalQuizzes).toFixed(1) : "0";
 
   return (
-    <div className="max-w-6xl mx-auto w-full p-4 space-y-12 pb-20">
+    <div className="space-y-8 pb-20 max-w-6xl mx-auto w-full">
       <div>
-        <h1 className="text-4xl font-black text-brand-dark mb-2">Platform Administration</h1>
-        <p className="text-gray-500 font-bold">Manage users and global quizzes</p>
+        <h1 className="text-3xl font-black text-brand-dark mb-2">{t("platformMetrics")}</h1>
+        <p className="text-gray-500 font-bold">{t("overviewDesc")}</p>
       </div>
 
-      <section>
-        <h2 className="text-2xl font-bold bg-white text-gray-800 px-6 py-4 rounded-t-2xl border-b-2 border-gray-100 flex items-center justify-between">
-          <span>Users</span>
-          <span className="bg-brand-purple/10 text-brand-purple px-3 py-1 rounded-full text-sm">{allUsers.length} total</span>
-        </h2>
-        <div className="bg-white border-x-2 border-b-2 border-gray-100 rounded-b-2xl shadow-sm overflow-hidden overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="p-5 font-bold text-gray-500 border-b-2 border-gray-100 uppercase text-xs tracking-wider">ID</th>
-                <th className="p-5 font-bold text-gray-500 border-b-2 border-gray-100 uppercase text-xs tracking-wider">Name / Email</th>
-                <th className="p-5 font-bold text-gray-500 border-b-2 border-gray-100 uppercase text-xs tracking-wider">Role</th>
-                <th className="p-5 font-bold text-gray-500 border-b-2 border-gray-100 uppercase text-xs tracking-wider">Created</th>
-                <th className="p-5 font-bold text-gray-500 border-b-2 border-gray-100 text-right uppercase text-xs tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allUsers.map(u => (
-                <tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                  <td className="p-5 text-sm font-mono text-gray-400">{u.id}</td>
-                  <td className="p-5">
-                    <div className="font-bold text-gray-800">{u.name}</div>
-                    <div className="text-sm text-brand-purple font-medium">{u.email}</div>
-                  </td>
-                  <td className="p-5 font-bold">
-                    <span className={`px-2.5 py-1 rounded-lg text-xs tracking-wide ${u.role === 'ADMIN' ? 'bg-red-100 text-red-700' : u.role === 'TEACHER' ? 'bg-brand-purple/20 text-brand-purple' : 'bg-gray-100 text-gray-600'}`}>{u.role}</span>
-                  </td>
-                  <td className="p-5 text-sm text-gray-500 font-medium">{u.createdAt?.toLocaleString()}</td>
-                  <td className="p-5 text-right">
-                    {u.role !== 'ADMIN' && (
-                      <DeleteButton id={u.id} action={deleteUserAction} entityName="user" />
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Users Card */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border-2 border-gray-100 flex flex-col justify-center">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">{t("totalUsers")}</h3>
+          <div className="text-4xl font-black text-brand-dark">{totalUsers}</div>
+          <div className="mt-4 flex justify-between items-center text-sm font-bold text-gray-500">
+            <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-brand-purple"></div> {t("teachers")}: {totalTeachers}</span>
+            <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-gray-400"></div> {t("students")}: {totalStudents}</span>
+          </div>
         </div>
-      </section>
 
-      <section>
-        <h2 className="text-2xl font-bold bg-white text-gray-800 px-6 py-4 rounded-t-2xl border-b-2 border-gray-100 flex items-center justify-between">
-          <span>Quizzes</span>
-          <span className="bg-brand-yellow/20 text-brand-yellow px-3 py-1 rounded-full text-sm">{allQuizzes.length} total</span>
-        </h2>
-        <div className="bg-white border-x-2 border-b-2 border-gray-100 rounded-b-2xl shadow-sm overflow-hidden overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="p-5 font-bold text-gray-500 border-b-2 border-gray-100 uppercase text-xs tracking-wider">Quiz ID</th>
-                <th className="p-5 font-bold text-gray-500 border-b-2 border-gray-100 uppercase text-xs tracking-wider">Title</th>
-                <th className="p-5 font-bold text-gray-500 border-b-2 border-gray-100 uppercase text-xs tracking-wider">Creator</th>
-                <th className="p-5 font-bold text-gray-500 border-b-2 border-gray-100 uppercase text-xs tracking-wider">Created</th>
-                <th className="p-5 font-bold text-gray-500 border-b-2 border-gray-100 text-right uppercase text-xs tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allQuizzes.map(q => (
-                <tr key={q.id} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                  <td className="p-5 text-sm font-mono text-gray-400">{q.id}</td>
-                  <td className="p-5 font-bold text-gray-800">{q.title}</td>
-                  <td className="p-5 font-bold text-brand-purple">{q.creator?.name || 'Unknown'}</td>
-                  <td className="p-5 text-sm text-gray-500 font-medium">{q.createdAt?.toLocaleString()}</td>
-                  <td className="p-5 text-right">
-                    <DeleteButton id={q.id} action={deleteQuizAction} entityName="quiz" />
-                  </td>
-                </tr>
-              ))}
-              {allQuizzes.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-gray-400 font-bold italic">No quizzes exist on the platform.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        {/* Quizzes Card */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border-2 border-gray-100 flex flex-col justify-center">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">{t("totalQuizzes")}</h3>
+          <div className="text-4xl font-black text-brand-dark">{totalQuizzes}</div>
+          <div className="mt-4 flex justify-between text-sm font-bold text-brand-yellow">
+            <span>{t("avgQuestions", { avg: avgQuestions })}</span>
+          </div>
         </div>
-      </section>
+
+        {/* Total Questions */}
+         <div className="bg-white p-6 rounded-2xl shadow-sm border-2 border-gray-100 flex flex-col justify-center">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">{t("questionsBank")}</h3>
+          <div className="text-4xl font-black text-brand-dark">{totalQuestions}</div>
+          <div className="mt-4 text-sm font-bold text-gray-400">
+            {t("acrossCreators")}
+          </div>
+        </div>
+
+        {/* Plans Distribution */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border-2 border-gray-100 flex flex-col justify-center lg:col-span-1 md:col-span-2">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 border-b-2 border-gray-50 pb-2">{t("planGroups")}</h3>
+          <div className="space-y-2 mt-1 flex-1 overflow-y-auto pr-2">
+            {plansGroup.sort((a,b) => b.count - a.count).map(p => (
+              <div key={p.plan} className="flex justify-between items-center text-sm font-bold text-gray-700">
+                <span className="flex items-center gap-2 flex-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 shadow-sm"></span>
+                  {p.plan || t("unknown")}
+                </span>
+                <span className="bg-gray-100 px-2.5 py-0.5 rounded-lg text-xs">{p.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

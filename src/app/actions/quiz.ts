@@ -65,6 +65,16 @@ export async function createQuiz(formData: FormData): Promise<CreateQuizState> {
       throw new Error("Unauthorized to create quizzes. Please log in.");
     }
     
+    // Check limits
+    const currentUser = await db.query.usersTable.findFirst({ where: eq(usersTable.id, session.id) });
+    const plan = currentUser?.plan || "ECO";
+
+    if (plan === "ECO" && questions.length > 20) {
+      return { error: "Gói ECO chỉ cho phép tối đa 20 câu hỏi mỗi Quiz." };
+    } else if (plan === "PRO" && questions.length > 50) {
+      return { error: "Gói PRO chỉ cho phép tối đa 50 câu hỏi mỗi Quiz." };
+    }
+
     const teacher = { id: session.id };
 
     const [quiz] = await db.insert(quizzesTable).values({
@@ -156,6 +166,16 @@ export async function updateQuizAction(formData: FormData): Promise<CreateQuizSt
     const session = await getSession();
     if (!session || session.role !== "TEACHER") {
       throw new Error("Unauthorized to update quizzes. Please log in.");
+    }
+
+    // Check limits
+    const currentUser = await db.query.usersTable.findFirst({ where: eq(usersTable.id, session.id) });
+    const plan = currentUser?.plan || "ECO";
+
+    if (plan === "ECO" && questions.length > 20) {
+      return { error: "Gói ECO chỉ cho phép tối đa 20 câu hỏi mỗi Quiz." };
+    } else if (plan === "PRO" && questions.length > 50) {
+      return { error: "Gói PRO chỉ cho phép tối đa 50 câu hỏi mỗi Quiz." };
     }
 
     const quiz = await db.query.quizzesTable.findFirst({ where: eq(quizzesTable.id, quizId) });

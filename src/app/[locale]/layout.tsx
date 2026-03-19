@@ -63,6 +63,7 @@ export default async function RootLayout({
 
   const messages = await getMessages();
   const t = await getTranslations("Navbar");
+  const tAdmin = await getTranslations("Admin");
 
   return (
     <html lang={locale}>
@@ -119,12 +120,25 @@ export default async function RootLayout({
             )}
             {session && session.role === "ADMIN" && (
               <div className="w-64 bg-gray-900 text-white flex-shrink-0 flex flex-col items-center py-6 gap-4 sticky top-[72px] h-[calc(100vh-72px)] hidden md:flex z-10 shadow-xl overflow-y-auto">
-                 <h3 className="font-black uppercase tracking-widest text-sm mb-2 border-b-2 border-gray-800 w-full text-center pb-4 text-red-500">Admin Control</h3>
+                 <h3 className="font-black uppercase tracking-widest text-sm mb-2 border-b-2 border-gray-800 w-full text-center pb-4 text-red-500">{tAdmin("controlPanel")}</h3>
                  <Link href="/admin/dashboard" className="w-4/5 text-center font-bold py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-sm tracking-wide flex items-center justify-center gap-2">
+                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                     <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                     <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                   </svg>
+                   {tAdmin("dashboard")}
+                 </Link>
+                 <Link href="/admin/users" className="w-4/5 text-center font-bold py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-sm tracking-wide flex items-center justify-center gap-2">
                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                      <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                    </svg>
-                   Users & Quizzes
+                   {tAdmin("users")}
+                 </Link>
+                 <Link href="/admin/quizzes" className="w-4/5 text-center font-bold py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-sm tracking-wide flex items-center justify-center gap-2">
+                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                     <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                   </svg>
+                   {tAdmin("quizzes")}
                  </Link>
               </div>
             )}

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { usersTable } from "@/lib/schema";
+import { usersTable, teacherApprovalsTable } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { encrypt } from "@/lib/auth";
@@ -108,6 +108,15 @@ export async function registerAction(formData: FormData) {
     verificationToken: vToken,
     createdAt: new Date(),
   });
+
+  if (role === "TEACHER") {
+    await db.insert(teacherApprovalsTable).values({
+      id: Math.random().toString(36).slice(2),
+      userId: id,
+      status: "PENDING",
+      createdAt: new Date(),
+    });
+  }
 
   await sendVerificationEmail(email.toLowerCase(), name, vToken);
 

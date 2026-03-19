@@ -10,10 +10,18 @@ export const usersTable = sqliteTable("users", {
   geminiApiKey: text("gemini_api_key"),
   geminiModel: text("gemini_model").default("gemini-3.1-flash-lite-preview"),
   role: text("role").notNull().default("STUDENT"),
+  plan: text("plan").notNull().default("ECO"),
   isVerified: integer("is_verified", { mode: "boolean" }).notNull().default(false),
   verificationToken: text("verification_token"),
   resetToken: text("reset_token"),
   resetTokenExpires: integer("reset_token_expires", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+export const teacherApprovalsTable = sqliteTable("teacher_approvals", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("PENDING"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
@@ -154,5 +162,12 @@ export const quizSharesRelations = relations(quizSharesTable, ({ one }) => ({
   quiz: one(quizzesTable, {
     fields: [quizSharesTable.quizId],
     references: [quizzesTable.id],
+  }),
+}));
+
+export const teacherApprovalsRelations = relations(teacherApprovalsTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [teacherApprovalsTable.userId],
+    references: [usersTable.id],
   }),
 }));

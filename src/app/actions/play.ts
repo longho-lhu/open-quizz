@@ -1,7 +1,7 @@
 "use server";
 import { db } from "@/lib/db";
 import { quizzesTable, liveSessionsTable, participantsTable, participantAnswersTable, optionsTable } from "@/lib/schema";
-import { eq, and, not, desc } from "drizzle-orm";
+import { eq, and, not, desc, sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
 export async function kickParticipantAction(participantId: string) {
@@ -17,10 +17,28 @@ export async function joinQuizWithNicknameAction(code: string, nickname: string,
   const codeUpper = code.toUpperCase();
   const activeSession = await db.query.liveSessionsTable.findFirst({
     where: eq(liveSessionsTable.code, codeUpper),
+    with: {
+      quiz: {
+        with: { creator: true }
+      }
+    }
   });
 
   if (!activeSession) return { error: "Session not found or invalid game code." };
   if (activeSession.status === "FINISHED") return { error: "This game session has already finished." };
+
+  // Check limits
+  const currentParticipantsCount = await db.select({ count: sql`count(*)` })
+    .from(participantsTable)
+    .where(eq(participantsTable.sessionId, activeSession.id));
+  const count = Number(currentParticipantsCount[0]?.count || 0);
+
+  const plan = activeSession.quiz?.creator?.plan || "ECO";
+  if (plan === "ECO" && count >= 100) {
+    return { error: "Phòng đã đạt giới hạn 100 người chơi (Gói ECO)." };
+  } else if (plan === "PRO" && count >= 500) {
+    return { error: "Phòng đã đạt giới hạn 500 người chơi (Gói PRO)." };
+  }
 
   const participantId = Math.random().toString(36).slice(2);
   

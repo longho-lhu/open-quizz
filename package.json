@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "update": "git pull && npm install && npm run build && pm2 restart all && pm2 save && echo 'Update completed!'"
+    "update": "git pull && npm install && npx drizzle-kit push && npm run build && pm2 restart all && pm2 save && echo 'Update completed!'",
+    "db:update": "npx drizzle-kit push",
+    "db:studio": "npx drizzle-kit studio"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
