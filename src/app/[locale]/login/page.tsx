@@ -28,8 +28,11 @@ export default function LoginPage() {
             <label className="block text-sm font-bold text-gray-700 mb-1">{t('email')}</label>
             <input name="email" type="email" required className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-purple focus:ring-0 outline-none" />
           </div>
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">{t('password')}</label>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <label className="block text-sm font-bold text-gray-700">{t('password')}</label>
+              <Link href="/forgot-password" className="text-xs font-bold text-brand-purple hover:underline">Quên mật khẩu?</Link>
+            </div>
             <input name="password" type="password" required className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-purple focus:ring-0 outline-none" />
           </div>
           <button type="submit" disabled={isPending} className="btn-primary w-full text-xl py-3 mt-4">

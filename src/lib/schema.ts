@@ -10,6 +10,10 @@ export const usersTable = sqliteTable("users", {
   geminiApiKey: text("gemini_api_key"),
   geminiModel: text("gemini_model").default("gemini-3.1-flash-lite-preview"),
   role: text("role").notNull().default("STUDENT"),
+  isVerified: integer("is_verified", { mode: "boolean" }).notNull().default(false),
+  verificationToken: text("verification_token"),
+  resetToken: text("reset_token"),
+  resetTokenExpires: integer("reset_token_expires", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 

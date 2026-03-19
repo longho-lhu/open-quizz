@@ -3,6 +3,8 @@ import Database from "better-sqlite3";
 import * as schema from "./schema";
 import fs from "fs";
 import { execSync } from "child_process";
+import bcrypt from "bcryptjs";
+import { eq, sql } from "drizzle-orm";
 
 const dbFile = "sqlite.db";
 const needsInit = !fs.existsSync(dbFile) || fs.statSync(dbFile).size === 0;
@@ -19,3 +21,5 @@ if (needsInit) {
     console.error("Failed to push schema to database:", err);
   }
 }
+
+// Seeder removed as per request to handle admin via .env

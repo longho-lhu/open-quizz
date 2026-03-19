@@ -95,6 +95,17 @@ export default async function RootLayout({
             {session && session.role === "TEACHER" && (
               <TeacherSidebar tDashboard={t("dashboard")} tSettings={t("settings")} />
             )}
+            {session && session.role === "ADMIN" && (
+              <div className="w-64 bg-gray-900 text-white flex-shrink-0 flex flex-col items-center py-6 gap-4 sticky top-[72px] h-[calc(100vh-72px)] hidden md:flex z-10 shadow-xl overflow-y-auto">
+                 <h3 className="font-black uppercase tracking-widest text-sm mb-2 border-b-2 border-gray-800 w-full text-center pb-4 text-red-500">Admin Control</h3>
+                 <Link href="/admin/dashboard" className="w-4/5 text-center font-bold py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-sm tracking-wide flex items-center justify-center gap-2">
+                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                     <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                   </svg>
+                   Users & Quizzes
+                 </Link>
+              </div>
+            )}
             <main id="main-content" className="flex-1 flex flex-col p-4 sm:p-6 min-w-0 w-full">
               {children}
             </main>
