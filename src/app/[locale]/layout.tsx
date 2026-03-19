@@ -15,10 +15,32 @@ import { eq } from "drizzle-orm";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Quizz",
-  description: "Create and play interactive quizzes",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  title: "Open quizz",
+  description: "Nền tảng tạo và tham gia trả lời câu hỏi trắc nghiệm tương tác trực tuyến.",
   icons: {
     icon: "/Picture/logo/1.jpg",
+  },
+  openGraph: {
+    title: "Open quizz",
+    description: "Nền tảng tạo và tham gia trả lời câu hỏi trắc nghiệm tương tác trực tuyến.",
+    siteName: "Open quizz",
+    images: [
+      {
+        url: "/Picture/logo/2.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Open quizz Logo",
+      },
+    ],
+    locale: "vi_VN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Open quizz",
+    description: "Nền tảng tạo và tham gia trả lời câu hỏi trắc nghiệm tương tác trực tuyến.",
+    images: ["/Picture/logo/2.jpg"],
   },
 };
 

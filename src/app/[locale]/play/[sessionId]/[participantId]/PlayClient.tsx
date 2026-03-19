@@ -255,8 +255,11 @@ export default function PlayClient({ sessionId, participantId }: any) {
             </div>
          </div>
          
-         <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl p-4 md:p-6 mb-4 border-4 border-brand-purple text-center relative flex items-center justify-center shrink-0 min-h-[100px] md:min-h-[120px]">
-            <h2 className="text-xl sm:text-2xl md:text-4xl font-black leading-tight text-gray-800 line-clamp-4">{question.text}</h2>
+         <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl p-4 md:p-6 mb-4 border-4 border-brand-purple text-center relative flex flex-col items-center justify-center shrink-0 min-h-[100px] md:min-h-[120px]">
+            {question.imageUrl && (
+              <img src={question.imageUrl} alt="Question" className="max-h-32 sm:max-h-48 w-auto object-contain mb-4 rounded-xl shadow-sm border-2 border-gray-100" />
+            )}
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-black leading-tight text-gray-800 line-clamp-4">{question.text}</h2>
          </div>
 
          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 flex-1 drop-shadow-sm min-h-0 pb-4">

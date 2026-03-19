@@ -81,6 +81,7 @@ export async function createQuiz(formData: FormData): Promise<CreateQuizState> {
         text: q.text,
         quizId: quiz.id,
         timeLimit: q.timeLimit || 15,
+        imageUrl: q.imageUrl || null,
         createdAt: new Date(),
       }).returning();
 
@@ -181,6 +182,7 @@ export async function updateQuizAction(formData: FormData): Promise<CreateQuizSt
         text: q.text,
         quizId: quizId,
         timeLimit: q.timeLimit || 15,
+        imageUrl: q.imageUrl || null,
         createdAt: new Date(),
       }).returning();
 

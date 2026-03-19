@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createQuiz, updateQuizAction } from "@/app/actions/quiz";
 import { generateQuizQuestionsAction } from "@/app/actions/ai";
+import { uploadImageAction } from "@/app/actions/upload";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -71,6 +72,29 @@ export default function QuizEditorClient({
 
   const updateQuestionTimeLimit = (qId: number, timeLimit: number) => {
     setQuestions(questions.map((q: any) => (q.id === qId ? { ...q, timeLimit } : q)));
+  };
+
+  const updateQuestionImage = (qId: number, imageUrl: string) => {
+    setQuestions(questions.map((q: any) => (q.id === qId ? { ...q, imageUrl } : q)));
+  };
+
+  const uploadQuestionImage = async (qId: number, e: any) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await uploadImageAction(formData);
+      if (res.error) {
+        setError(res.error);
+      } else if (res.url) {
+        updateQuestionImage(qId, res.url);
+      }
+    } catch (err) {
+      setError("Failed to upload image");
+    }
   };
 
   const updateOption = (qId: number, oId: number, text: string) => {
@@ -320,8 +344,36 @@ export default function QuizEditorClient({
                   value={q.text}
                   onChange={(e) => updateQuestion(q.id, e.target.value)}
                   placeholder={t("typeQuestionPlaceholder")}
-                  className="w-full text-xl font-bold bg-white border-2 border-gray-200 rounded-xl px-4 py-4 mb-6 focus:border-brand-purple outline-none shadow-sm"
+                  className="w-full text-xl font-bold bg-white border-2 border-gray-200 rounded-xl px-4 py-4 mb-4 focus:border-brand-purple outline-none shadow-sm"
                 />
+
+                <div className="mb-6 flex flex-col sm:flex-row gap-4">
+                  <input
+                    value={q.imageUrl || ""}
+                    onChange={(e) => updateQuestionImage(q.id, e.target.value)}
+                    placeholder="URL ảnh (vd: https://...)"
+                    className="flex-1 bg-white border-2 border-gray-200 rounded-xl px-4 py-2 text-sm font-medium focus:border-brand-purple outline-none shadow-sm"
+                  />
+                  <div className="relative overflow-hidden inline-block shrink-0 h-[42px] sm:h-auto">
+                    <button type="button" className="bg-purple-100 text-purple-700 font-bold px-4 py-2 rounded-xl text-sm border-2 border-purple-200 hover:bg-purple-200 transition h-full flex items-center justify-center w-full sm:w-auto">
+                      Tải ảnh lên
+                    </button>
+                    <input type="file" accept="image/*" onChange={(e) => uploadQuestionImage(q.id, e)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                  </div>
+                </div>
+                
+                {q.imageUrl && (
+                  <div className="mb-6 rounded-xl overflow-hidden border-2 border-gray-200 bg-gray-50 flex items-center justify-center p-2 relative">
+                    <img src={q.imageUrl} alt="Question" className="max-h-60 max-w-full object-contain rounded-lg" />
+                    <button 
+                      type="button" 
+                      onClick={() => updateQuestionImage(q.id, "")}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold hover:bg-red-600 shadow-md"
+                    >
+                      X
+                    </button>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {q.options.map((o: any, idx: number) => (

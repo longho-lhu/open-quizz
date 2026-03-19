@@ -31,6 +31,7 @@ export const questionsTable = sqliteTable("questions", {
   text: text("text").notNull(),
   quizId: text("quiz_id").notNull().references(() => quizzesTable.id, { onDelete: "cascade" }),
   timeLimit: integer("time_limit").notNull().default(15),
+  imageUrl: text("image_url"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
