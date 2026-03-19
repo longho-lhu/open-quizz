@@ -14,8 +14,8 @@ export default async function Home() {
       <div className="absolute -bottom-8 left-40 w-32 h-32 bg-brand-purple rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
       
       <div className="text-center space-y-4 relative">
-        <h1 className="text-5xl md:text-7xl font-black text-brand-dark tracking-tighter mix-blend-multiply flex flex-col md:flex-row gap-4 items-center justify-center">
-          <span className="text-brand-purple drop-shadow-sm">{t('title')}</span>
+        <h1 className="flex justify-center mix-blend-multiply items-center">
+          <img src="/Picture/logo/2.jpg" alt="Quizz Logo" className="h-20 sm:h-24 md:h-32 w-auto object-contain drop-shadow-sm" />
         </h1>
         <p className="text-xl md:text-2xl text-gray-600 font-medium max-w-2xl mx-auto pt-4 relative z-10 px-4">
           {t('subtitle')}

@@ -1,5 +1,6 @@
 import { getSessionStatus } from "@/app/actions/live";
 import { Link } from "@/i18n/routing";
+import ExportExcelButton from "@/components/ExportExcelButton";
 
 export default async function SessionResultsPage({ params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId } = await params;
@@ -39,11 +40,16 @@ export default async function SessionResultsPage({ params }: { params: Promise<{
            </div>
          </div>
 
-         <h2 className="text-2xl font-bold mb-4">Detailed Leaderboard</h2>
+         <div className="flex justify-between items-center mb-4">
+           <h2 className="text-2xl font-bold">Detailed Leaderboard</h2>
+           <ExportExcelButton session={session} participants={sorted} />
+         </div>
          <div className="space-y-4">
            {sorted.map((p, i) => {
              const progress = p.answers?.length || 0;
              const isComplete = progress === session.quiz.questions.length;
+             const correctCount = p.answers?.filter((a: any) => a.isCorrect).length || 0;
+             const incorrectCount = progress - correctCount;
 
              return (
                <div key={p.id} className="flex justify-between items-center bg-gray-50 p-6 rounded-2xl border-2 border-gray-200 shadow-sm hover:scale-[1.01] transition-transform">
@@ -51,9 +57,13 @@ export default async function SessionResultsPage({ params }: { params: Promise<{
                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center font-black text-gray-500 border-2 border-gray-200 shadow-sm">{i+1}</div>
                    <div>
                      <span className="font-bold text-2xl">{p.nickname}</span>
-                     <div className="text-sm font-bold text-gray-500 mt-1">
-                       {progress} / {session.quiz.questions.length} answered
-                       {isComplete && <span className="ml-2 text-brand-green">✓ Finished</span>}
+                     <div className="text-sm font-bold text-gray-500 mt-1 flex items-center gap-2">
+                       <span>{progress} / {session.quiz.questions.length} answered</span>
+                       {isComplete && <span className="text-brand-green">✓ Finished</span>}
+                     </div>
+                     <div className="text-sm font-bold mt-2 flex gap-3">
+                       <span className="text-brand-green bg-brand-green/10 px-2.5 py-1 rounded-lg border border-brand-green/20">{correctCount} Correct</span>
+                       <span className="text-red-500 bg-red-50 px-2.5 py-1 rounded-lg border border-red-100">{incorrectCount} Incorrect</span>
                      </div>
                    </div>
                  </div>

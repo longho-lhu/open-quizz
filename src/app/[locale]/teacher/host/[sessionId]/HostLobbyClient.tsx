@@ -11,8 +11,13 @@ export default function HostLobbyClient({ sessionId, initialSession, initialPart
   const [session, setSession] = useState(initialSession);
   const [participants, setParticipants] = useState(initialParticipants);
   const [isConfiguring, setIsConfiguring] = useState(initialSession?.status === "WAITING");
+  const [hostUrl, setHostUrl] = useState("");
   const router = useRouter();
   const t = useTranslations("Host");
+
+  useEffect(() => {
+    setHostUrl(window.location.host);
+  }, []);
 
   useEffect(() => {
     // Polling every 2 seconds for real-time state sync
@@ -154,7 +159,7 @@ export default function HostLobbyClient({ sessionId, initialSession, initialPart
         `}</style>
 
         <h1 className="text-6xl font-black text-brand-dark mb-4 drop-shadow-md">{t("joinGame")}</h1>
-        <p className="text-2xl text-gray-500 font-medium tracking-wide mt-4 mb-8">{t("enterCodeAt")} <strong>localhost:3000/join</strong></p>
+        <p className="text-2xl text-gray-500 font-medium tracking-wide mt-4 mb-8">{t("enterCodeAt")} <strong>{hostUrl ? `${hostUrl}/join` : "..."}</strong></p>
         
         <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 w-full max-w-5xl px-4">
           <div className="scale-110 md:scale-125 origin-center shrink-0">

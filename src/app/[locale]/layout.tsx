@@ -17,6 +17,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: "Quizz",
   description: "Create and play interactive quizzes",
+  icons: {
+    icon: "/Picture/logo/1.jpg",
+  },
 };
 
 export default async function RootLayout({
@@ -45,7 +48,7 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <nav id="main-nav" className="bg-white border-b-2 border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl font-black text-brand-purple tracking-tight">{t("title")}</span>
+              <img src="/Picture/logo/2.jpg" alt="Quizz Logo" className="h-8 md:h-10 w-auto object-contain" />
             </Link>
             <div className="flex gap-4 items-center">
               <LanguageSwitcher />
@@ -96,6 +99,19 @@ export default async function RootLayout({
               {children}
             </main>
           </div>
+
+          {/* Global Footer */}
+          <footer id="main-footer" className="bg-white border-t-2 border-gray-100 py-8 mt-auto text-center z-40 relative px-6 w-full shrink-0">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-3">
+                <img src="/Picture/logo/2.jpg" alt="Quizz Logo" className="h-6 w-auto object-contain grayscale opacity-60" />
+                <span className="text-gray-400 font-bold text-sm tracking-wide">© {new Date().getFullYear()} Quizz Platform. All rights reserved.</span>
+              </div>
+              <div className="text-gray-400 text-sm font-medium">
+                Developed for interactive learning and assessment.
+              </div>
+            </div>
+          </footer>
         </NextIntlClientProvider>
       </body>
     </html>

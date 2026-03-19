@@ -96,13 +96,27 @@ export async function submitAnswerAction(participantId: string, questionId: stri
 
   let points = 0;
   if (option.isCorrect) {
-    if (timeLeft <= 0) {
-      points = 0;
+    const timePassedMs = Math.max(0, timeLimit - timeLeft);
+    let calculatedPoints = 1000;
+    
+    if (timeLimit <= 5000) {
+      const ratio = timePassedMs / timeLimit;
+      calculatedPoints = 1000 - (900 * ratio);
     } else {
-      // 100 to 1000 points based on time left
-      const ratio = Math.max(0, Math.min(1, timeLeft / timeLimit));
-      points = Math.max(100, Math.floor(ratio * 1000));
+      if (timePassedMs <= 5000) {
+        // Drop slower (only 10% in first 5s)
+        const earlyRatio = timePassedMs / 5000;
+        calculatedPoints = 1000 - (100 * earlyRatio);
+      } else {
+        // Drop faster for the rest
+        const lateTimePassed = timePassedMs - 5000;
+        const remainingTime = timeLimit - 5000;
+        const lateRatio = lateTimePassed / remainingTime;
+        calculatedPoints = 900 - (800 * lateRatio);
+      }
     }
+    
+    points = Math.max(100, Math.floor(calculatedPoints));
   }
 
   await db.insert(participantAnswersTable).values({
@@ -127,4 +141,31 @@ export async function submitAnswerAction(participantId: string, questionId: stri
   }
 
   return { success: true, points, isCorrect: option.isCorrect };
+}
+
+export async function submitTimeoutAction(participantId: string, questionId: string) {
+  const existing = await db.query.participantAnswersTable.findFirst({
+    where: and(
+      eq(participantAnswersTable.participantId, participantId),
+      eq(participantAnswersTable.questionId, questionId)
+    )
+  });
+
+  if (existing) return { error: "Already answered" };
+
+  const anyOption = await db.query.optionsTable.findFirst({
+    where: eq(optionsTable.questionId, questionId)
+  });
+
+  await db.insert(participantAnswersTable).values({
+    id: Math.random().toString(36).slice(2),
+    participantId,
+    questionId,
+    optionId: anyOption ? anyOption.id : "timeout",
+    points: 0,
+    isCorrect: false,
+    createdAt: new Date(),
+  });
+
+  return { success: true };
 }
