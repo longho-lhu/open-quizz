@@ -259,7 +259,7 @@ export default function PlayClient({ sessionId, participantId }: any) {
             {question.imageUrl && (
               <img src={question.imageUrl} alt="Question" className="max-h-32 sm:max-h-48 w-auto object-contain mb-4 rounded-xl shadow-sm border-2 border-gray-100" />
             )}
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-black leading-tight text-gray-800 line-clamp-4">{question.text}</h2>
+            <h2 className={`${question.text?.length > 80 ? 'text-lg sm:text-xl md:text-2xl' : 'text-xl sm:text-2xl md:text-3xl'} font-black leading-tight text-gray-800 line-clamp-4`}>{question.text}</h2>
          </div>
 
          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 flex-1 drop-shadow-sm min-h-0 pb-4">

@@ -1,6 +1,6 @@
 "use server";
 
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { GoogleGenAI, Type, Schema, Part } from "@google/genai";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { usersTable } from "@/lib/schema";
@@ -54,43 +54,48 @@ export async function generateQuizQuestionsAction(formData: FormData) {
   const bloomLevel = formData.get("bloomLevel") as string || "Understanding";
   const language = formData.get("language") as string || "Vietnamese";
   const file = formData.get("file") as File | null;
-  let documentText = formData.get("documentText") as string || "";
+  const documentText = formData.get("documentText") as string || ""; // From standard textarea
 
+  let filePart: Part | null = null;
   if (file && file.size > 0) {
     try {
-      if (file.type === "application/pdf") {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const pdfParseModule: any = await import("pdf-parse");
-        const pdfParse = pdfParseModule.default || pdfParseModule;
-        // @ts-ignore
-        const pdfData = await pdfParse(buffer);
-        documentText = pdfData.text;
-      } else {
-        documentText = await file.text();
-      }
+      const buffer = Buffer.from(await file.arrayBuffer());
+      filePart = {
+        inlineData: {
+          data: buffer.toString("base64"),
+          mimeType: file.type || "application/octet-stream"
+        }
+      };
     } catch (err) {
-      console.error("File parse error", err);
-      return { error: "Failed to parse the uploaded file." };
+      console.error("File processing error", err);
+      return { error: "Failed to process the uploaded file." };
     }
   }
 
-  if (!topic && !documentText) {
+  if (!topic && !documentText && !filePart) {
     return { error: "Please provide a topic or upload a document." };
   }
 
   const ai = new GoogleGenAI({ apiKey: user.geminiApiKey });
 
-  const prompt = `You are an expert educator.
+  const promptText = `You are an expert educator.
 Generate ${count} multiple choice questions corresponding to the Cognitive Level of "${bloomLevel}" in Bloom's Taxonomy.
 The questions and answers MUST BE written in ${language}.
 Each question must have exactly 4 options with only 1 correct answer.
+IMPORTANT RESTRICTION: The question text MUST NOT exceed 50 words. Make it concise and easy to read.
 ${topic ? `Topic: ${topic}\n` : ""}
-${documentText ? `Based on the following document content:\n${documentText.substring(0, 40000)}` : ""}`;
+${documentText ? `Based on the following document content:\n${documentText.substring(0, 40000)}` : ""}
+${filePart ? `Please analyze the attached document to generate the questions.` : ""}`;
+
+  const contents: any[] = [promptText];
+  if (filePart) {
+    contents.push(filePart);
+  }
 
   try {
     const response = await ai.models.generateContent({
       model: user?.geminiModel || "gemini-3.1-flash-lite-preview",
-      contents: prompt,
+      contents: contents,
       config: {
         responseMimeType: "application/json",
         responseSchema: responseSchema,

@@ -295,7 +295,7 @@ export default function QuizEditorClient({
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">{t("uploadLabel")}</label>
-                  <input type="file" accept=".pdf,.txt,.csv" onChange={e => setAiFile(e.target.files?.[0] || null)} className="w-full bg-white border-2 border-purple-100 rounded-xl px-4 py-1.5 outline-none focus:border-purple-400 text-sm" />
+                  <input type="file" accept=".pdf,.txt,.csv,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.rtf,.md,image/*" onChange={e => setAiFile(e.target.files?.[0] || null)} className="w-full bg-white border-2 border-purple-100 rounded-xl px-4 py-1.5 outline-none focus:border-purple-400 text-sm" />
                 </div>
               </div>
               <div>
