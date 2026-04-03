@@ -109,7 +109,13 @@
     "musicTheme2": "Theme 2",
     "duplicateDeviceWarning": "Multiple accounts detected on the same device",
     "kickParticipant": "Remove Participant",
-    "pts": "pts"
+    "pts": "pts",
+    "progressionMode": "Progression Mode",
+    "progressionModeDesc": "Who controls when to move to the next question",
+    "progressionAuto": "Auto (Timer based)",
+    "progressionManual": "Manual (Host controlled)",
+    "showLeaderboard": "Lock & Show Leaderboard",
+    "nextQuestion": "Next Question"
   },
   "Play": {
     "connecting": "Connecting to Game...",
@@ -129,7 +135,8 @@
     "yourScore": "Your Score",
     "yourRank": "Your Rank",
     "leaderboard": "Leaderboard",
-    "pts": "pts"
+    "pts": "pts",
+    "waitingForHostNext": "Waiting for teacher to move to the next question..."
   },
   "Settings": {
     "title": "Account Settings",

@@ -4,6 +4,7 @@ import { liveSessionsTable, participantsTable, participantAnswersTable, quizzesT
 import { eq, inArray, desc, and, or } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { broadcastSessionUpdate } from "@/lib/sse";
 
 export async function hostQuizAction(quizId: string) {
   const session = await getSession();
@@ -33,7 +34,6 @@ export async function hostQuizAction(quizId: string) {
   return sessionId;
 }
 
-// Internal helper to verify ownership
 async function verifyOwnership(sessionId: string, userId: string) {
   const ls = await db.query.liveSessionsTable.findFirst({ where: eq(liveSessionsTable.id, sessionId) });
   if (!ls) throw new Error("Not found");
@@ -46,13 +46,29 @@ async function verifyOwnership(sessionId: string, userId: string) {
   }
 }
 
+export async function endQuestionEarlyAction(sessionId: string) {
+  const session = await getSession();
+  if (!session || session.role !== "TEACHER") throw new Error("Unauthorized");
+  await verifyOwnership(sessionId, session.id);
+  
+  // Backdate startedAt so the clients' timers immediately calculate remaining <= 0 and timeout.
+  const pastDate = new Date(Date.now() - 3600000); // 1 hour ago
+  await db.update(liveSessionsTable)
+    .set({ startedAt: pastDate })
+    .where(eq(liveSessionsTable.id, sessionId));
+    
+  broadcastSessionUpdate(sessionId, { startedAt: pastDate.toISOString() });
+}
+
 export async function getSessionStatus(sessionId: string) {
   const sess = await db.query.liveSessionsTable.findFirst({
     where: eq(liveSessionsTable.id, sessionId),
     with: {
       quiz: {
         with: {
-          questions: true,
+          questions: {
+            with: { options: true }
+          },
         }
       }
     }
@@ -69,21 +85,26 @@ export async function getSessionStatus(sessionId: string) {
 }
 
 export async function startGameAction(sessionId: string) {
+  const now = new Date();
   await db.update(liveSessionsTable)
-    .set({ status: "IN_PROGRESS", currentQuestionIndex: 0, startedAt: new Date() })
+    .set({ status: "IN_PROGRESS", currentQuestionIndex: 0, startedAt: now })
     .where(eq(liveSessionsTable.id, sessionId));
+  broadcastSessionUpdate(sessionId, { status: "IN_PROGRESS", currentQuestionIndex: 0, startedAt: now.toISOString() });
 }
 
 export async function nextQuestionAction(sessionId: string, nextIndex: number) {
+  const now = new Date();
   await db.update(liveSessionsTable)
-    .set({ currentQuestionIndex: nextIndex, startedAt: new Date() })
+    .set({ currentQuestionIndex: nextIndex, startedAt: now })
     .where(eq(liveSessionsTable.id, sessionId));
+  broadcastSessionUpdate(sessionId, { currentQuestionIndex: nextIndex, startedAt: now.toISOString() });
 }
 
 export async function endGameAction(sessionId: string) {
   await db.update(liveSessionsTable)
     .set({ status: "FINISHED" })
     .where(eq(liveSessionsTable.id, sessionId));
+  broadcastSessionUpdate(sessionId, { status: "FINISHED" });
 }
 
 export async function forceEndSessionAction(sessionId: string) {
@@ -93,6 +114,7 @@ export async function forceEndSessionAction(sessionId: string) {
   await db.update(liveSessionsTable)
     .set({ status: "FINISHED" })
     .where(eq(liveSessionsTable.id, sessionId));
+  broadcastSessionUpdate(sessionId);
   revalidatePath("/teacher/sessions");
 }
 
@@ -154,11 +176,12 @@ export async function deleteSessionAction(sessionId: string) {
   revalidatePath("/teacher/sessions");
 }
 
-export async function updateSessionSettingsAction(sessionId: string, feedbackLevel: string, randomNicknames: boolean, timeoutWait: boolean = false, musicTheme: string = "none") {
+export async function updateSessionSettingsAction(sessionId: string, feedbackLevel: string, randomNicknames: boolean, timeoutWait: boolean = false, musicTheme: string = "none", progressionMode: string = "AUTO") {
   const session = await getSession();
   if (!session || session.role !== "TEACHER") throw new Error("Unauthorized");
   await verifyOwnership(sessionId, session.id);
-  await db.update(liveSessionsTable).set({ feedbackLevel, randomNicknames, timeoutWait, musicTheme }).where(eq(liveSessionsTable.id, sessionId));
+  await db.update(liveSessionsTable).set({ feedbackLevel, randomNicknames, timeoutWait, musicTheme, progressionMode }).where(eq(liveSessionsTable.id, sessionId));
+  broadcastSessionUpdate(sessionId);
 }
 
 export async function resetSessionAction(sessionId: string) {
@@ -175,5 +198,6 @@ export async function resetSessionAction(sessionId: string) {
   
   await db.update(liveSessionsTable).set({ status: 'WAITING', currentQuestionIndex: -1, startedAt: null }).where(eq(liveSessionsTable.id, sessionId));
   
+  broadcastSessionUpdate(sessionId);
   revalidatePath("/teacher/sessions");
 }

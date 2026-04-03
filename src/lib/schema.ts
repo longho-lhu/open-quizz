@@ -93,6 +93,7 @@ export const liveSessionsTable = sqliteTable("live_sessions", {
   timeoutWait: integer("timeout_wait", { mode: "boolean" }).notNull().default(false),
   musicTheme: text("music_theme").notNull().default("s1.MP3"),
   currentQuestionIndex: integer("current_question_index").notNull().default(-1),
+  progressionMode: text("progression_mode").notNull().default("AUTO"), // AUTO, MANUAL
   startedAt: integer("started_at", { mode: "timestamp" }),
 });
 

@@ -9,23 +9,54 @@ export default function PlayClient({ sessionId, participantId }: any) {
   const [timeLeft, setTimeLeft] = useState(0);
   const [answering, setAnswering] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [localQuestionStartTime, setLocalQuestionStartTime] = useState(0);
+  const [isQuestionTimeUp, setIsQuestionTimeUp] = useState(false);
   const [feedback, setFeedback] = useState<any>(null);
   const t = useTranslations("Play");
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Polling every 2s to check if Host finished the session early
-    const interval = setInterval(async () => {
+    const fetchState = async () => {
       const state = await getParticipantState(sessionId, participantId);
       setData(state);
-    }, 2000);
-    
+    };
+
     // Initial fetch
-    getParticipantState(sessionId, participantId).then(setData);
+    fetchState();
     
-    return () => clearInterval(interval);
+    // Fallback polling (every 10s instead of 2s because we have SSE now)
+    const interval = setInterval(fetchState, 10000);
+
+    // Real-time synchronization via Server-Sent Events
+    const eventSource = new EventSource(`/api/sse/${sessionId}`);
+    eventSource.onmessage = (event) => {
+       try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'UPDATE') {
+             fetchState();
+          }
+       } catch (e) {
+          // ignore keepalive pings or json errors
+       }
+    };
+
+    return () => {
+      clearInterval(interval);
+      eventSource.close();
+    };
   }, [sessionId, participantId]);
+
+  useEffect(() => {
+    const session = data?.session;
+    if (session?.progressionMode === "MANUAL" && session?.status === "IN_PROGRESS") {
+      if (typeof session.currentQuestionIndex === 'number' && session.currentQuestionIndex > currentIdx) {
+        setFeedback(null);
+        setAnswering(false);
+        setCurrentIdx(session.currentQuestionIndex);
+      }
+    }
+  }, [data?.session?.currentQuestionIndex, data?.session?.progressionMode, data?.session?.status, currentIdx]);
 
   const quiz = data?.session?.quiz;
   const questionTimeLimit = quiz && currentIdx < quiz.questions.length ? quiz.questions[currentIdx].timeLimit : 15;
@@ -34,26 +65,42 @@ export default function PlayClient({ sessionId, participantId }: any) {
   // Local Timer Logic 
   useEffect(() => {
     setTimeLeft(timeLimitMs);
+    setLocalQuestionStartTime(Date.now());
+    setIsQuestionTimeUp(false);
   }, [currentIdx, timeLimitMs]);
 
   useEffect(() => {
     const status = data?.session?.status;
     const timeoutWait = data?.session?.timeoutWait;
+    const startedAt = data?.session?.startedAt;
     
-    if (status === "IN_PROGRESS" && !feedback && quiz) {
+    if (status === "IN_PROGRESS" && quiz) {
       if (currentIdx < quiz.questions.length) {
         if (timerRef.current) clearInterval(timerRef.current);
         
+        let start = localQuestionStartTime || Date.now();
+        if (data?.session?.progressionMode === "MANUAL" && startedAt) {
+           const serverStart = new Date(startedAt).getTime();
+           // If the server start is relatively recent (e.g. not from a previous session run), we use it to sync perfectly.
+           // However, localQuestionStartTime is safer for auto mode where server startedAt isn't updated per question.
+           if (serverStart > start - 300000) { // arbitrary threshold to reject ancient timestamps
+              start = serverStart;
+           }
+        }
+
         timerRef.current = setInterval(() => {
-          setTimeLeft(prev => {
-            const newTime = prev - 50;
-            if (newTime <= 0) {
-              if (timerRef.current) clearInterval(timerRef.current);
-              if (!timeoutWait) handleTimeout();
-              return 0;
-            }
-            return newTime;
-          });
+          const now = Date.now();
+          const elapsed = now - start;
+          const remaining = timeLimitMs - elapsed;
+
+          if (remaining <= 0) {
+            setTimeLeft(0);
+            setIsQuestionTimeUp(true);
+            if (timerRef.current) clearInterval(timerRef.current);
+            if (!timeoutWait) handleTimeout();
+          } else {
+            setTimeLeft(remaining);
+          }
         }, 50);
       }
     }
@@ -62,7 +109,7 @@ export default function PlayClient({ sessionId, participantId }: any) {
        if (timerRef.current) clearInterval(timerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.session?.status, currentIdx, feedback]);
+  }, [data?.session?.status, data?.session?.startedAt, currentIdx, feedback, timeLimitMs, localQuestionStartTime]);
 
   const nextQuestion = () => {
     setFeedback(null);
@@ -70,13 +117,13 @@ export default function PlayClient({ sessionId, participantId }: any) {
   };
 
   const handleTimeout = async () => {
-     if (answering) return;
+     if (answering || feedback) return;
      setFeedback({ isTimeout: true });
      if (data?.participant?.id && quiz?.questions?.[currentIdx]?.id) {
        submitTimeoutAction(data.participant.id, quiz.questions[currentIdx].id);
      }
      setTimeout(() => {
-       nextQuestion();
+       if (data?.session?.progressionMode !== "MANUAL") nextQuestion();
      }, 3000);
   };
 
@@ -187,7 +234,7 @@ export default function PlayClient({ sessionId, participantId }: any) {
       
       setAnswering(false);
       setTimeout(() => {
-        nextQuestion();
+        if (session?.progressionMode !== "MANUAL") nextQuestion();
       }, 3000);
     };
 
@@ -202,7 +249,23 @@ export default function PlayClient({ sessionId, participantId }: any) {
                   {t("hiddenFeedback")}
                 </div>
              </div>
-             <p className="mt-12 text-2xl font-bold text-gray-400 animate-pulse tracking-wide uppercase">{t("getReady")}</p>
+             <p className="mt-12 text-2xl font-bold text-gray-400 animate-pulse tracking-wide uppercase">
+               {session?.progressionMode === "MANUAL" ? t("waitingForHostNext") : t("getReady")}
+             </p>
+           </div>
+        );
+      }
+
+      if (session?.progressionMode === "MANUAL" && !isQuestionTimeUp) {
+        return (
+           <div className="flex-1 flex flex-col items-center justify-center p-4 bg-gray-50">
+             <div className="text-center space-y-6 bg-white p-12 rounded-[3rem] shadow-xl border-4 border-gray-100">
+                <div className="text-8xl animate-bounce-in">⏳</div>
+                <h2 className="text-4xl font-black mb-4">{t("answerLogged")}</h2>
+                <div className="inline-block bg-gray-100 text-gray-500 font-bold px-8 py-3 rounded-full mt-4">
+                  {t("waitingForHostNext")}
+                </div>
+             </div>
            </div>
         );
       }
@@ -233,7 +296,9 @@ export default function PlayClient({ sessionId, participantId }: any) {
                 <h2 className="text-4xl font-black text-red-500">{t("timesUp")}</h2>
              </div>
            )}
-           <p className="mt-12 text-2xl font-bold text-gray-400 animate-pulse tracking-wide uppercase">{t("getReady")}</p>
+           <p className="mt-12 text-2xl font-bold text-gray-400 animate-pulse tracking-wide uppercase">
+             {session?.progressionMode === "MANUAL" ? t("waitingForHostNext") : t("getReady")}
+           </p>
         </div>
       );
     }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
-import { startGameAction, endGameAction, updateSessionSettingsAction, getSessionStatus } from "@/app/actions/live";
+import { startGameAction, endGameAction, updateSessionSettingsAction, getSessionStatus, nextQuestionAction, endQuestionEarlyAction } from "@/app/actions/live";
 import { kickParticipantAction } from "@/app/actions/play";
 import QRCodeDisplay from "@/components/QRCodeDisplay";
 
@@ -11,6 +11,9 @@ export default function HostLobbyClient({ sessionId, initialSession, initialPart
   const [session, setSession] = useState(initialSession);
   const [participants, setParticipants] = useState(initialParticipants);
   const [isConfiguring, setIsConfiguring] = useState(initialSession?.status === "WAITING");
+  const [hostPhase, setHostPhase] = useState<'QUESTION' | 'RESULT' | 'LEADERBOARD'>('QUESTION');
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [hostUrl, setHostUrl] = useState("");
   const router = useRouter();
   const t = useTranslations("Host");
@@ -46,17 +49,50 @@ export default function HostLobbyClient({ sessionId, initialSession, initialPart
     }
   }, [participants, session?.status, totalQuestions, sessionId]);
 
-  const handleSettingsChange = async (newFeedbackLevel: string, newRandom: boolean, newTimeoutWait: boolean, newMusicTheme: string) => {
+  // Host local timer for manual mode
+  useEffect(() => {
+    if (session?.status === "IN_PROGRESS" && session?.progressionMode === "MANUAL" && hostPhase === "QUESTION") {
+       const qTime = quiz?.questions?.[session.currentQuestionIndex]?.timeLimit || 15;
+       const timeLimitMs = qTime * 1000;
+       const start = session.startedAt ? new Date(session.startedAt).getTime() : Date.now();
+       
+       const interval = setInterval(() => {
+          const now = Date.now();
+          const elapsed = now - start;
+          const remaining = timeLimitMs - elapsed;
+          if (remaining <= 0) {
+             setTimeLeft(0);
+             setHostPhase((prev) => prev === 'QUESTION' ? 'RESULT' : prev);
+             clearInterval(interval);
+          } else {
+             setTimeLeft(remaining);
+          }
+       }, 50);
+       return () => clearInterval(interval);
+    }
+  }, [session?.status, session?.startedAt, session?.progressionMode, session?.currentQuestionIndex, hostPhase, quiz]);
+
+  const handleSettingsChange = async (newFeedbackLevel: string, newRandom: boolean, newTimeoutWait: boolean, newMusicTheme: string, newProgMode?: string) => {
       if (newFeedbackLevel === "SHOW_NOTHING") newRandom = true;
-      setSession({...session, feedbackLevel: newFeedbackLevel, randomNicknames: newRandom, timeoutWait: newTimeoutWait, musicTheme: newMusicTheme});
-      await updateSessionSettingsAction(sessionId, newFeedbackLevel, newRandom, newTimeoutWait, newMusicTheme);
+      const progMode = newProgMode || session.progressionMode || "AUTO";
+      setSession({...session, feedbackLevel: newFeedbackLevel, randomNicknames: newRandom, timeoutWait: newTimeoutWait, musicTheme: newMusicTheme, progressionMode: progMode});
+      await updateSessionSettingsAction(sessionId, newFeedbackLevel, newRandom, newTimeoutWait, newMusicTheme, progMode);
   }
 
   const musicSrc = session?.musicTheme && session.musicTheme !== "none" ? `/Music/${session.musicTheme}` : null;
   const shouldPlayMusic = musicSrc && !isConfiguring;
 
   const handleStart = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
     await startGameAction(sessionId);
+    const data = await getSessionStatus(sessionId);
+    if (data) {
+      setSession(data.session);
+      setParticipants(data.participants);
+    }
+    setHostPhase('QUESTION');
+    setIsProcessing(false);
   };
 
   const handleEnd = async () => {
@@ -125,6 +161,19 @@ export default function HostLobbyClient({ sessionId, initialSession, initialPart
                 </select>
                 <p className="text-sm font-bold text-gray-400 mt-2">{t("musicThemeDesc")}</p>
               </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">{t("progressionMode")}</label>
+                <select 
+                   value={session.progressionMode || "AUTO"}
+                   onChange={(e) => handleSettingsChange(session.feedbackLevel, session.randomNicknames, session.timeoutWait, session.musicTheme || "none", e.target.value)}
+                   className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-4 focus:border-brand-purple outline-none font-bold text-gray-700 cursor-pointer transition text-lg"
+                >
+                   <option value="AUTO">{t("progressionAuto")}</option>
+                   <option value="MANUAL">{t("progressionManual")}</option>
+                </select>
+                <p className="text-sm font-bold text-gray-400 mt-2">{t("progressionModeDesc")}</p>
+              </div>
+
               <div className="flex items-center justify-between bg-gray-50 p-6 rounded-xl border-2 border-gray-200 hover:border-brand-purple/50 transition">
                 <div>
                    <p className="font-bold text-gray-800 text-lg">{t("randomNicknames")}</p>
@@ -208,30 +257,54 @@ export default function HostLobbyClient({ sessionId, initialSession, initialPart
       );
     }
   } else if (session.status === "IN_PROGRESS") {
-    content = (
-      <div className="max-w-4xl mx-auto w-full text-center space-y-8 py-12 flex-1 flex flex-col">
-        <style>{`
-          #main-nav { display: none !important; }
-          #main-sidebar { display: none !important; }
-          #main-content { padding: 2rem !important; }
-        `}</style>
-        <div className="flex justify-between items-center w-full">
-           <div>
-             <h1 className="text-4xl font-black text-brand-purple text-left">{t("liveGameplay")}</h1>
-             <p className="text-lg font-medium text-gray-500 text-left">{t("liveGameplayDesc")}</p>
-           </div>
-           <button onClick={handleEnd} className="btn-secondary text-red-500 hover:text-red-700 hover:border-red-200 hover:bg-red-50 px-8 font-bold">{t("endEarly")}</button>
-        </div>
-        
+    const isManual = session.progressionMode === "MANUAL";
+    const currentQ = quiz?.questions?.[session.currentQuestionIndex];
+    const timeLimitMs = (currentQ?.timeLimit || 15) * 1000;
+    const progressPercent = (timeLeft / timeLimitMs) * 100;
+    
+    let manualAnswersCount = 0;
+    if (isManual && currentQ) {
+      manualAnswersCount = participants.filter((p: any) => 
+        p.answers?.some((a: any) => a.questionId === currentQ.id)
+      ).length;
+    }
+
+    const leaderboardContent = (
         <div className="w-full bg-white rounded-3xl p-8 mt-8 shadow-sm text-left border-4 border-gray-100 flex-1">
-          <h2 className="text-3xl font-black mb-6 text-brand-dark">{t("liveLeaderboard")}</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-black text-brand-dark">{t("liveLeaderboard")}</h2>
+            {isManual && (
+              <button 
+                disabled={isProcessing}
+                onClick={async () => {
+                  if (session.currentQuestionIndex + 1 < totalQuestions) {
+                    setIsProcessing(true);
+                    await nextQuestionAction(sessionId, session.currentQuestionIndex + 1);
+                    const data = await getSessionStatus(sessionId);
+                    if (data) {
+                       setSession(data.session);
+                       setParticipants(data.participants);
+                    }
+                    setHostPhase('QUESTION');
+                    setIsProcessing(false);
+                  } else {
+                    handleEnd();
+                  }
+                }} 
+                className={`bg-brand-purple text-white px-6 py-2 rounded-xl font-bold transition flex items-center justify-center gap-2 ${isProcessing ? "opacity-75 cursor-not-allowed" : "hover:bg-purple-700"}`}
+              >
+                {isProcessing ? <span className="spinner w-4 h-4 mr-2 border-2 text-white border-white border-t-transparent animate-spin rounded-full"></span> : null}
+                {t("nextQuestion")}
+              </button>
+            )}
+          </div>
           <div className="space-y-4">
              {[...participants].sort((a,b)=>b.score - a.score).map((p, i) => {
                 const progress = p.answers?.length || 0;
-                const progressPercent = (progress / totalQuestions) * 100;
+                const pPercent = (progress / totalQuestions) * 100;
                 return (
                   <div key={p.id} className="flex flex-col bg-gray-50 p-5 rounded-2xl border-2 border-gray-200 shadow-sm transition-all hover:scale-[1.01] overflow-hidden relative">
-                    <div className="absolute top-0 left-0 bottom-0 bg-brand-green/10 transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
+                    <div className="absolute top-0 left-0 bottom-0 bg-brand-green/10 transition-all duration-500" style={{ width: `${pPercent}%` }}></div>
                     <div className="relative flex justify-between items-center z-10 w-full">
                       <div className="flex flex-col">
                         <span className="font-bold text-2xl text-gray-700 flex items-center gap-2">
@@ -254,6 +327,105 @@ export default function HostLobbyClient({ sessionId, initialSession, initialPart
              })}
           </div>
         </div>
+    );
+
+    const questionContent = currentQ && (
+       <div className="w-full bg-white rounded-3xl p-6 mt-6 shadow-sm text-center border-4 border-gray-100 flex-1 flex flex-col items-center relative overflow-y-auto">
+          <div className="absolute top-4 right-4 bg-brand-light text-brand-purple px-4 py-2 rounded-xl font-bold z-10 hidden sm:block">
+            Q {session.currentQuestionIndex + 1} / {totalQuestions}
+          </div>
+          
+          <div className="w-full bg-gray-200 h-4 rounded-full overflow-hidden mb-6 shadow-inner relative shrink-0">
+            <div 
+              className={`h-full transition-all duration-75 ${progressPercent < 30 ? 'bg-red-500' : 'bg-brand-purple'}`}
+              style={{ width: `${progressPercent}%` }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center font-bold text-[10px] text-white mix-blend-difference drop-shadow-md">
+               {Math.ceil(timeLeft / 1000)}s
+            </div>
+          </div>
+
+          <div className="flex-1 w-full flex flex-col justify-center items-center mb-6 min-h-[120px]">
+            {currentQ.imageUrl && (
+              <img src={currentQ.imageUrl} alt="Question" className="max-h-32 sm:max-h-48 w-auto object-contain mb-4 rounded-xl shadow-sm border-2 border-gray-100" />
+            )}
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-800 break-words">{currentQ.text}</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 flex-1 drop-shadow-sm min-h-0 w-full mb-8">
+            {currentQ.options?.map((opt: any, i: number) => {
+                const colors = [
+                  "bg-red-500 border-red-700",
+                  "bg-blue-500 border-blue-700",
+                  "bg-brand-yellow border-yellow-500",
+                  "bg-brand-green border-green-600"
+                ];
+                const colorClass = colors[i % colors.length];
+                const isResult = hostPhase === 'RESULT';
+                const opacityClass = isResult && !opt.isCorrect ? 'opacity-30 grayscale' : 'opacity-95';
+
+                return (
+                  <div
+                    key={opt.id}
+                    className={`${colorClass} ${opacityClass} text-white text-xl md:text-2xl font-black p-4 rounded-2xl md:rounded-3xl border-b-4 md:border-b-8 drop-shadow-md h-full min-h-[60px] md:min-h-[80px] flex items-center justify-center relative transition-all duration-500`}
+                  >
+                    <span className="drop-shadow-md line-clamp-3">{opt.text}</span>
+                    {isResult && opt.isCorrect && <span className="absolute top-2 right-4 text-3xl">✅</span>}
+                  </div>
+                );
+            })}
+          </div>
+          
+          <div className="text-center w-full max-w-sm mx-auto mb-6 bg-gray-50 p-4 rounded-2xl border-2 border-gray-100">
+            <p className="text-gray-500 font-bold uppercase tracking-wide">{t("answered", { done: manualAnswersCount, total: participants.length })}</p>
+            <div className="w-full h-4 bg-gray-200 mt-2 rounded-full overflow-hidden">
+               <div className="h-full bg-brand-green transition-all" style={{width: `${participants.length ? (manualAnswersCount/participants.length)*100 : 0}%`}}></div>
+            </div>
+          </div>
+
+          {hostPhase === 'QUESTION' ? (
+              <button 
+                disabled={isProcessing}
+                onClick={async () => { 
+                   if (isProcessing) return;
+                   setIsProcessing(true);
+                   await endQuestionEarlyAction(sessionId);
+                   setTimeLeft(0); 
+                   setHostPhase('RESULT'); 
+                   setIsProcessing(false);
+                }} 
+                className={`bg-brand-yellow text-brand-dark px-8 py-4 rounded-2xl font-black text-xl shadow-md transition transform flex items-center justify-center gap-2 mx-auto ${isProcessing ? "opacity-75 cursor-not-allowed" : "hover:bg-yellow-400 hover:scale-[1.02]"}`}
+              >
+                {isProcessing ? <span className="spinner w-5 h-5 mr-1 border-2 text-brand-dark border-brand-dark border-t-transparent animate-spin rounded-full"></span> : null}
+                {t.has('showResult') ? t('showResult') : 'Hiện Kết Quả'} &rarr;
+              </button>
+          ) : (
+              <button 
+                 onClick={() => setHostPhase('LEADERBOARD')} 
+                 className="bg-brand-purple text-white px-8 py-4 rounded-2xl font-black text-xl shadow-md hover:bg-purple-700 transition transform hover:scale-[1.02]"
+              >
+                 {t("showLeaderboard")} &rarr;
+              </button>
+          )}
+       </div>
+    );
+
+    content = (
+      <div className="max-w-4xl mx-auto w-full text-center space-y-8 py-12 flex-1 flex flex-col">
+        <style>{`
+          #main-nav { display: none !important; }
+          #main-sidebar { display: none !important; }
+          #main-content { padding: 2rem !important; }
+        `}</style>
+        <div className="flex justify-between items-center w-full">
+           <div>
+             <h1 className="text-4xl font-black text-brand-purple text-left">{t("liveGameplay")}</h1>
+             <p className="text-lg font-medium text-gray-500 text-left">{t("liveGameplayDesc")}</p>
+           </div>
+           <button onClick={handleEnd} className="btn-secondary text-red-500 hover:text-red-700 hover:border-red-200 hover:bg-red-50 px-8 font-bold">{t("endEarly")}</button>
+        </div>
+        
+        {isManual && (hostPhase === 'QUESTION' || hostPhase === 'RESULT') ? questionContent : leaderboardContent}
       </div>
     );
   } else if (session.status === "FINISHED") {

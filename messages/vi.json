@@ -109,7 +109,13 @@
     "musicTheme1": "Nhạc nền 1",
     "musicTheme2": "Nhạc nền 2",
     "duplicateDeviceWarning": "Nhiều tài khoản dùng chung một thiết bị",
-    "kickParticipant": "Xoá người tham gia"
+    "kickParticipant": "Xoá người tham gia",
+    "progressionMode": "Cách nhảy câu hỏi",
+    "progressionModeDesc": "Trò chơi sẽ tự nhảy câu, hay do bạn điều khiển",
+    "progressionAuto": "Tự động (theo thời gian)",
+    "progressionManual": "Giáo viên chuyển thủ công",
+    "showLeaderboard": "Khoá & Xem Bảng Xếp Hạng",
+    "nextQuestion": "Câu hỏi tiếp theo"
   },
   "Play": {
     "connecting": "Đang kết nối...",
@@ -129,7 +135,8 @@
     "yourScore": "Điểm số",
     "yourRank": "Xếp hạng",
     "leaderboard": "Bảng xếp hạng",
-    "pts": "đ"
+    "pts": "đ",
+    "waitingForHostNext": "Đang chờ giáo viên chuyển câu tiếp theo..."
   },
   "Settings": {
     "title": "Cài Đặt Tài Khoản",

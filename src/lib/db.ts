@@ -23,3 +23,10 @@ if (needsInit) {
 }
 
 // Seeder removed as per request to handle admin via .env
+
+try {
+  sqlite.exec('ALTER TABLE `live_sessions` ADD COLUMN `progression_mode` text NOT NULL DEFAULT "AUTO"');
+  console.log("Migration: added progression_mode column");
+} catch (e) {
+  // Ignore if already exists
+}

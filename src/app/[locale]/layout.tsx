@@ -79,10 +79,10 @@ export default async function RootLayout({
                 <>
                   <div className="flex items-center gap-3">
                     {session.role === "STUDENT" && (
-                       <Link href="/student/history" className="text-gray-600 hover:text-brand-purple font-semibold hidden md:inline-block mr-2">{t("history")}</Link>
+                      <Link href="/student/history" className="text-gray-600 hover:text-brand-purple font-semibold hidden md:inline-block mr-2">{t("history")}</Link>
                     )}
                     <Link href="/join" className="text-gray-600 hover:text-brand-purple font-semibold hidden md:inline-block mr-2">{t("joinGame")}</Link>
-                    
+
                     {dbUser?.avatar ? (
                       <img src={dbUser.avatar} alt="Avatar" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-brand-purple/50 shadow-sm" />
                     ) : (
@@ -96,8 +96,8 @@ export default async function RootLayout({
                   </div>
                   <form action={logoutAction}>
                     <button type="submit" title={t("logout")} className="text-red-500 hover:text-red-600 hover:bg-red-50 p-2 sm:px-3 sm:py-1.5 rounded-lg transition-colors flex items-center gap-2">
-                       <FiLogOut className="text-xl" />
-                       <span className="font-bold hidden sm:inline-block">{t("logout")}</span>
+                      <FiLogOut className="text-xl" />
+                      <span className="font-bold hidden sm:inline-block">{t("logout")}</span>
                     </button>
                   </form>
                 </>
@@ -113,33 +113,33 @@ export default async function RootLayout({
               )}
             </div>
           </nav>
-          
+
           <div className="flex-1 flex">
             {session && session.role === "TEACHER" && (
               <TeacherSidebar tDashboard={t("dashboard")} tSettings={t("settings")} />
             )}
             {session && session.role === "ADMIN" && (
               <div className="w-64 bg-gray-900 text-white flex-shrink-0 flex flex-col items-center py-6 gap-4 sticky top-[72px] h-[calc(100vh-72px)] hidden md:flex z-10 shadow-xl overflow-y-auto">
-                 <h3 className="font-black uppercase tracking-widest text-sm mb-2 border-b-2 border-gray-800 w-full text-center pb-4 text-red-500">{tAdmin("controlPanel")}</h3>
-                 <Link href="/admin/dashboard" className="w-4/5 text-center font-bold py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-sm tracking-wide flex items-center justify-center gap-2">
-                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                     <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
-                     <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
-                   </svg>
-                   {tAdmin("dashboard")}
-                 </Link>
-                 <Link href="/admin/users" className="w-4/5 text-center font-bold py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-sm tracking-wide flex items-center justify-center gap-2">
-                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                     <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                   </svg>
-                   {tAdmin("users")}
-                 </Link>
-                 <Link href="/admin/quizzes" className="w-4/5 text-center font-bold py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-sm tracking-wide flex items-center justify-center gap-2">
-                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                     <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                   </svg>
-                   {tAdmin("quizzes")}
-                 </Link>
+                <h3 className="font-black uppercase tracking-widest text-sm mb-2 border-b-2 border-gray-800 w-full text-center pb-4 text-red-500">{tAdmin("controlPanel")}</h3>
+                <Link href="/admin/dashboard" className="w-4/5 text-center font-bold py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-sm tracking-wide flex items-center justify-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                    <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                  </svg>
+                  {tAdmin("dashboard")}
+                </Link>
+                <Link href="/admin/users" className="w-4/5 text-center font-bold py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-sm tracking-wide flex items-center justify-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                  </svg>
+                  {tAdmin("users")}
+                </Link>
+                <Link href="/admin/quizzes" className="w-4/5 text-center font-bold py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-sm tracking-wide flex items-center justify-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {tAdmin("quizzes")}
+                </Link>
               </div>
             )}
             <main id="main-content" className="flex-1 flex flex-col p-4 sm:p-6 min-w-0 w-full">
@@ -155,7 +155,7 @@ export default async function RootLayout({
                 <span className="text-gray-400 font-bold text-sm tracking-wide">© {new Date().getFullYear()} Quizz Platform. All rights reserved.</span>
               </div>
               <div className="text-gray-400 text-sm font-medium">
-                Developed for interactive learning and assessment.
+                Developed by Faculty of Information Technology, Lac Hong University.
               </div>
             </div>
           </footer>
