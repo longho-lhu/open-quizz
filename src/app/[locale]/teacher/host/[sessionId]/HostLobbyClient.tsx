@@ -35,8 +35,7 @@ export default function HostLobbyClient({ sessionId, initialSession, initialPart
 
     fetchState();
 
-    // Fallback slow polling just in case WebSocket disconnects
-    const interval = setInterval(fetchState, 15000);
+    // Initial fetch happens on load
 
     const mqttUrl = process.env.NEXT_PUBLIC_MQTT_URL || "wss://mqtt.fitlhu.com";
     const client = mqtt.connect(mqttUrl);
@@ -47,12 +46,40 @@ export default function HostLobbyClient({ sessionId, initialSession, initialPart
 
     client.on('message', (topic, message) => {
       if (topic === `session/${sessionId}`) {
-        fetchState();
+        try {
+          const data = JSON.parse(message.toString());
+          if (data.type === 'SESSION_UPDATE') {
+            if (!data.payload || Object.keys(data.payload).length === 0) {
+               fetchState();
+            } else {
+               setSession((prev: any) => ({ ...prev, ...data.payload }));
+            }
+          } else if (data.type === 'PARTICIPANT_JOINED') {
+            setParticipants((prev: any) => [...prev.filter((p: any) => p.id !== data.payload.id), data.payload]);
+          } else if (data.type === 'ANSWER_SUBMITTED') {
+            setParticipants((prev: any) => prev.map((p: any) => {
+               if (p.id === data.payload.participantId) {
+                 const newAnswers = [...(p.answers || [])];
+                 if (!newAnswers.some(a => a.questionId === data.payload.questionId)) {
+                   newAnswers.push({
+                     questionId: data.payload.questionId,
+                     points: data.payload.points,
+                     isCorrect: data.payload.isCorrect,
+                     createdAt: new Date().toISOString(),
+                   });
+                 }
+                 return { ...p, answers: newAnswers, score: p.score + data.payload.points };
+               }
+               return p;
+            }));
+          }
+        } catch(e) {
+           console.error("MQTT parse err", e);
+        }
       }
     });
 
     return () => {
-      clearInterval(interval);
       client.end();
     };
   }, [sessionId]);

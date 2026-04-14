@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { quizzesTable, liveSessionsTable, participantsTable, participantAnswersTable, optionsTable } from "@/lib/schema";
 import { eq, and, not, desc, sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { broadcastSessionUpdate } from "@/lib/sse";
 
 export async function kickParticipantAction(participantId: string) {
   try {
@@ -56,6 +57,17 @@ export async function joinQuizWithNicknameAction(code: string, nickname: string,
     randomName,
     deviceId,
   });
+
+  const participantData = {
+    id: participantId,
+    nickname,
+    randomName,
+    deviceId,
+    score: 0,
+    answers: []
+  };
+
+  broadcastSessionUpdate(activeSession.id, { type: 'PARTICIPANT_JOINED', payload: participantData });
 
   return { success: true, sessionId: activeSession.id, participantId };
 }
@@ -158,6 +170,18 @@ export async function submitAnswerAction(participantId: string, questionId: stri
       .where(eq(participantsTable.id, participantId));
   }
 
+  const answerData = {
+    participantId,
+    questionId,
+    points,
+    isCorrect: option.isCorrect
+  };
+  
+  // Note: For answer submitted, we need to know the sessionId. We can query it from the participant object.
+  if (participant) {
+      broadcastSessionUpdate(participant.sessionId, { type: 'ANSWER_SUBMITTED', payload: answerData });
+  }
+
   return { success: true, points, isCorrect: option.isCorrect };
 }
 
@@ -184,6 +208,17 @@ export async function submitTimeoutAction(participantId: string, questionId: str
     isCorrect: false,
     createdAt: new Date(),
   });
+
+  const participant = await db.query.participantsTable.findFirst({
+    where: eq(participantsTable.id, participantId)
+  });
+
+  if (participant) {
+    broadcastSessionUpdate(participant.sessionId, { 
+      type: 'ANSWER_SUBMITTED', 
+      payload: { participantId, questionId, points: 0, isCorrect: false } 
+    });
+  }
 
   return { success: true };
 }

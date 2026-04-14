@@ -27,11 +27,9 @@ export default function PlayClient({ sessionId, participantId }: any) {
     // Initial fetch
     fetchState();
 
-    // Fallback polling (every 10s instead of 2s because we have WebSocket now)
-    const interval = setInterval(fetchState, 10000);
+    // Fallback polling replaced by pure WebSocket events
 
-    // Real-time synchronization via MQTT
-    const mqttUrl = process.env.NEXT_PUBLIC_MQTT_URL || "ws://mqtt.fitlhu.com";
+    const mqttUrl = process.env.NEXT_PUBLIC_MQTT_URL || "wss://mqtt.fitlhu.com";
     const client = mqtt.connect(mqttUrl);
 
     client.on('connect', () => {
@@ -40,12 +38,56 @@ export default function PlayClient({ sessionId, participantId }: any) {
 
     client.on('message', (topic, message) => {
       if (topic === `session/${sessionId}`) {
-        fetchState();
+        try {
+          const msgData = JSON.parse(message.toString());
+          if (msgData.type === 'SESSION_UPDATE') {
+            if (!msgData.payload || Object.keys(msgData.payload).length === 0) {
+               fetchState();
+            } else {
+               setData((prev: any) => {
+                 if (!prev) return prev;
+                 return { ...prev, session: { ...prev.session, ...msgData.payload } };
+               });
+            }
+          } else if (msgData.type === 'PARTICIPANT_JOINED') {
+            setData((prev: any) => {
+               if (!prev) return prev;
+               const newLeaderboard = [...(prev.leaderboard || []).filter((p: any) => p.id !== msgData.payload.id), msgData.payload];
+               return { ...prev, leaderboard: newLeaderboard };
+            });
+          } else if (msgData.type === 'ANSWER_SUBMITTED') {
+            setData((prev: any) => {
+               if (!prev) return prev;
+               const newLeaderboard = (prev.leaderboard || []).map((p: any) => {
+                 if (p.id === msgData.payload.participantId) {
+                   return { ...p, score: p.score + msgData.payload.points };
+                 }
+                 return p;
+               }).sort((a: any, b: any) => b.score - a.score);
+               
+               let newAnswers = prev.answers || [];
+               let newParticipant = prev.participant;
+
+               if (msgData.payload.participantId === participantId && prev.participant?.id === participantId) {
+                   newParticipant = { ...prev.participant, score: prev.participant.score + msgData.payload.points };
+                   if (!newAnswers.some((a: any) => a.questionId === msgData.payload.questionId)) {
+                        newAnswers = [...newAnswers, {
+                            questionId: msgData.payload.questionId,
+                            points: msgData.payload.points,
+                            isCorrect: msgData.payload.isCorrect,
+                        }];
+                   }
+               }
+               return { ...prev, leaderboard: newLeaderboard, participant: newParticipant, answers: newAnswers };
+            });
+          }
+        } catch(e) {
+            console.error("MQTT parse err", e);
+        }
       }
     });
 
     return () => {
-      clearInterval(interval);
       client.end();
     };
   }, [sessionId, participantId]);
