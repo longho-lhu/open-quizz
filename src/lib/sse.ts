@@ -1,13 +1,16 @@
+import mqtt from "mqtt";
+
+const mqttUrl = process.env.MQTT_URL || "mqtt://mqtt.fitlhu.com";
+// Cache the connection
+const client = mqtt.connect(mqttUrl);
+
+client.on('error', (err) => {
+    console.error('MQTT backend error:', err);
+});
+
 export async function broadcastSessionUpdate(sessionId: string, data?: any) {
-  const port = process.env.PORT || '3008';
   try {
-     fetch(`http://127.0.0.1:${port}/api/internal-socket`, {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ sessionId, payload: data })
-     }).catch(e => {
-        // Ignore fetch errors to avoid crashing Next.js server actions if socket server is restarting
-     });
+     client.publish(`session/${sessionId}`, JSON.stringify({ type: 'UPDATE', payload: data }));
   } catch(e) {
       console.error("Socket emit error:", e);
   }
