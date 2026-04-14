@@ -1,35 +1,14 @@
-const globalForSse = global as unknown as { sseClients: Map<string, Set<ReadableStreamDefaultController>> };
-export const sseClients = globalForSse.sseClients || new Map<string, Set<ReadableStreamDefaultController>>();
-if (process.env.NODE_ENV !== "production") globalForSse.sseClients = sseClients;
-
-export function addClient(sessionId: string, controller: ReadableStreamDefaultController) {
-  if (!sseClients.has(sessionId)) {
-    sseClients.set(sessionId, new Set());
+export async function broadcastSessionUpdate(sessionId: string, data?: any) {
+  const port = process.env.PORT || '3008';
+  try {
+     fetch(`http://127.0.0.1:${port}/api/internal-socket`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ sessionId, payload: data })
+     }).catch(e => {
+        // Ignore fetch errors to avoid crashing Next.js server actions if socket server is restarting
+     });
+  } catch(e) {
+      console.error("Socket emit error:", e);
   }
-  sseClients.get(sessionId)!.add(controller);
-}
-
-export function removeClient(sessionId: string, controller: ReadableStreamDefaultController) {
-  const clients = sseClients.get(sessionId);
-  if (clients) {
-    clients.delete(controller);
-    if (clients.size === 0) sseClients.delete(sessionId);
-  }
-}
-
-export function broadcastSessionUpdate(sessionId: string, data?: any) {
-  const clients = sseClients.get(sessionId);
-  if (!clients || clients.size === 0) return;
-
-  const payload = { type: 'UPDATE', data };
-  const message = `data: ${JSON.stringify(payload)}\n\n`;
-  const encoder = new TextEncoder();
-  
-  clients.forEach(client => {
-    try {
-      client.enqueue(encoder.encode(message));
-    } catch (e) {
-      removeClient(sessionId, client);
-    }
-  });
 }

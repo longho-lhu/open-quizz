@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { startGameAction, endGameAction, updateSessionSettingsAction, getSessionStatus, nextQuestionAction, endQuestionEarlyAction } from "@/app/actions/live";
 import { kickParticipantAction } from "@/app/actions/play";
 import QRCodeDisplay from "@/components/QRCodeDisplay";
+import { io } from "socket.io-client";
 
 export default function HostLobbyClient({ sessionId, initialSession, initialParticipants }: any) {
   const [session, setSession] = useState(initialSession);
@@ -23,15 +24,32 @@ export default function HostLobbyClient({ sessionId, initialSession, initialPart
   }, []);
 
   useEffect(() => {
-    // Polling every 2 seconds for real-time state sync
-    const interval = setInterval(async () => {
+    // Only fetch state on initial load, and then when socket emits an update
+    const fetchState = async () => {
       const data = await getSessionStatus(sessionId);
       if (data) {
         setSession(data.session);
         setParticipants(data.participants);
       }
-    }, 2000);
-    return () => clearInterval(interval);
+    };
+    
+    fetchState();
+    
+    // Fallback slow polling just in case WebSocket disconnects
+    const interval = setInterval(fetchState, 15000);
+
+    const socket = io({ path: '/socket.io' });
+    
+    socket.emit("join_session", sessionId);
+    
+    socket.on("UPDATE", () => {
+        fetchState();
+    });
+
+    return () => {
+      clearInterval(interval);
+      socket.disconnect();
+    };
   }, [sessionId]);
 
   const quiz = session?.quiz;

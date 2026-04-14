@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { getParticipantState, submitAnswerAction, submitTimeoutAction } from "@/app/actions/play";
 import { useTranslations } from "next-intl";
 
+import { io } from "socket.io-client";
+
 export default function PlayClient({ sessionId, participantId }: any) {
   const [data, setData] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -25,25 +27,21 @@ export default function PlayClient({ sessionId, participantId }: any) {
     // Initial fetch
     fetchState();
     
-    // Fallback polling (every 10s instead of 2s because we have SSE now)
+    // Fallback polling (every 10s instead of 2s because we have WebSocket now)
     const interval = setInterval(fetchState, 10000);
 
-    // Real-time synchronization via Server-Sent Events
-    const eventSource = new EventSource(`/api/sse/${sessionId}`);
-    eventSource.onmessage = (event) => {
-       try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'UPDATE') {
-             fetchState();
-          }
-       } catch (e) {
-          // ignore keepalive pings or json errors
-       }
-    };
+    // Real-time synchronization via Socket.io
+    const socket = io({ path: '/socket.io' });
+    
+    socket.emit("join_session", sessionId);
+    
+    socket.on("UPDATE", () => {
+        fetchState();
+    });
 
     return () => {
       clearInterval(interval);
-      eventSource.close();
+      socket.disconnect();
     };
   }, [sessionId, participantId]);
 
