@@ -126,11 +126,7 @@ export default function PlayClient({ sessionId, participantId }: any) {
         let start = localQuestionStartTime || Date.now();
         if (data?.session?.progressionMode === "MANUAL" && startedAt) {
           const serverStart = new Date(startedAt).getTime();
-          // If the server start is relatively recent (e.g. not from a previous session run), we use it to sync perfectly.
-          // However, localQuestionStartTime is safer for auto mode where server startedAt isn't updated per question.
-          if (serverStart > start - 300000) { // arbitrary threshold to reject ancient timestamps
-            start = serverStart;
-          }
+          start = serverStart;
         }
 
         timerRef.current = setInterval(() => {
