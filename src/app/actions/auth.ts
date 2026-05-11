@@ -42,22 +42,95 @@ export async function loginAction(formData: FormData) {
     where: eq(usersTable.email, email.toLowerCase())
   });
 
-  if (!user || !user.password) {
+  // Check if we are running as an Electron Local Server
+  const isLocalServer = process.env.IS_LOCAL_SERVER === 'true';
+  const vpsUrl = process.env.NEXT_PUBLIC_VPS_URL || 'https://open-quizz.vercel.app'; // Update this default if needed
+
+  let finalUser = user;
+
+  if (isLocalServer) {
+    try {
+      // Try to login via VPS if internet is available
+      const res = await fetch(`${vpsUrl}/api/sync/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        // Timeout to avoid long wait if offline
+        signal: AbortSignal.timeout(5000), 
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          finalUser = data.user;
+          if (!finalUser || !finalUser.email) {
+             throw new Error("Invalid user data from VPS");
+          }
+          // Upsert the user into local DB for offline access later
+          const existingLocal = await db.query.usersTable.findFirst({
+            where: eq(usersTable.email, finalUser.email)
+          });
+          
+          if (existingLocal) {
+            await db.update(usersTable)
+              .set({ password: finalUser.password, name: finalUser.name, role: finalUser.role })
+              .where(eq(usersTable.email, finalUser.email));
+          } else {
+            await db.insert(usersTable).values({
+              ...finalUser,
+              createdAt: new Date(finalUser.createdAt),
+            });
+          }
+          
+          // Skip the local bcrypt check since VPS already verified it
+          const sessionData = {
+            id: finalUser.id,
+            email: finalUser.email,
+            role: finalUser.role,
+            name: finalUser.name,
+            vpsToken: await encrypt({ id: finalUser.id }), // We store a token to be used for /api/sync/export
+          };
+
+          const encryptedSession = await encrypt(sessionData);
+          const cookieStore = await cookies();
+          cookieStore.set("session", encryptedSession, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 60 * 60 * 24, // 1 day
+            path: "/",
+          });
+
+          if (finalUser.role === "ADMIN") {
+            redirect("/admin/dashboard");
+          } else if (finalUser.role === "STUDENT") {
+            redirect("/student/history");
+          } else {
+            redirect("/teacher/dashboard");
+          }
+        }
+      }
+    } catch (e) {
+      console.log('VPS Login failed or offline, falling back to local DB');
+      // If error (offline), fallback to local login
+    }
+  }
+
+  if (!finalUser || !finalUser.password) {
     return { error: "Invalid credentials" };
   }
 
-  const isValid = await bcrypt.compare(password, user.password);
+  const isValid = await bcrypt.compare(password, finalUser.password);
   if (!isValid) return { error: "Invalid credentials" };
 
-  if (!user.isVerified) {
+  if (!finalUser.isVerified) {
     return { error: "Vui lòng kiểm tra email để xác thực tài khoản trước khi đăng nhập." };
   }
 
   const sessionData = {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    name: user.name,
+    id: finalUser.id,
+    email: finalUser.email,
+    role: finalUser.role,
+    name: finalUser.name,
   };
 
   const encryptedSession = await encrypt(sessionData);
@@ -70,9 +143,9 @@ export async function loginAction(formData: FormData) {
     path: "/",
   });
 
-  if (user.role === "ADMIN") {
+  if (finalUser.role === "ADMIN") {
     redirect("/admin/dashboard");
-  } else if (user.role === "STUDENT") {
+  } else if (finalUser.role === "STUDENT") {
     redirect("/student/history");
   } else {
     redirect("/teacher/dashboard");

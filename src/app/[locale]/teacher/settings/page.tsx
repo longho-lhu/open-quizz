@@ -7,6 +7,7 @@ import { getApiKey } from "@/app/actions/settings";
 import SettingsClient from "./SettingsClient";
 
 export default async function SettingsPage() {
+  const isLocalServer = process.env.IS_LOCAL_SERVER === 'true';
   const session = await getSession();
   const t = await getTranslations("Settings");
 
@@ -33,6 +34,7 @@ export default async function SettingsPage() {
         initialApiKey={currentKey?.apiKey || ""}
         initialModel={currentKey?.model || "gemini-3.1-flash-lite-preview"}
         dbUser={dbUser}
+        isLocalServer={isLocalServer}
       />
     </div>
   );

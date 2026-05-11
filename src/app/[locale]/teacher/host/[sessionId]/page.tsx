@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { getSessionStatus } from "@/app/actions/live";
 import HostLobbyClient from "./HostLobbyClient";
+import PingDisplay from "@/components/PingDisplay";
 
 export default async function HostLobbyPage({ params }: { params: Promise<{ sessionId: string, locale: string }> }) {
   const { sessionId } = await params;
@@ -14,5 +15,10 @@ export default async function HostLobbyPage({ params }: { params: Promise<{ sess
 
   if (!data || !data.session) return <div>Live Session not found</div>;
 
-  return <HostLobbyClient sessionId={sessionId} initialSession={data.session} initialParticipants={data.participants} />;
+  return (
+    <>
+      <PingDisplay />
+      <HostLobbyClient sessionId={sessionId} initialSession={data.session} initialParticipants={data.participants} />
+    </>
+  );
 }
