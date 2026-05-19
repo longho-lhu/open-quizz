@@ -6,10 +6,12 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const email = body.email || body.user;
+    const password = body.password || body.pass;
 
     if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+      return NextResponse.json({ error: 'Email/user and password/pass are required' }, { status: 400 });
     }
 
     const user = await db.query.usersTable.findFirst({

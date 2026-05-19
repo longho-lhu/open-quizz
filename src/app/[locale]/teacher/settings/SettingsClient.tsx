@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { updateProfileAction, updatePasswordAction } from "@/app/actions/user";
 import { updateLocalModelAction } from "@/app/actions/settings";
@@ -64,6 +64,21 @@ export default function SettingsClient({ initialName, initialAvatar, initialLoca
     formData.append("localModel", model.id);
     await updateLocalModelAction(formData);
     window.location.reload();
+  };
+
+  const [showPing, setShowPing] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("openquizz_show_ping");
+    if (saved === "true") {
+      setShowPing(true);
+    }
+  }, []);
+
+  const handleTogglePing = () => {
+    const newVal = !showPing;
+    setShowPing(newVal);
+    localStorage.setItem("openquizz_show_ping", String(newVal));
   };
 
   const AVATARS = [
@@ -133,6 +148,25 @@ export default function SettingsClient({ initialName, initialAvatar, initialLoca
 
   return (
     <div className="space-y-8">
+      {/* Display Settings */}
+      <div className="bg-white rounded-3xl p-8 shadow-sm border-2 border-gray-100 max-w-2xl">
+        <h2 className="text-2xl font-black text-brand-dark mb-6 flex items-center gap-2">
+          <span className="text-brand-purple">🖥️</span> Cài đặt hiển thị
+        </h2>
+        <label className="flex items-center justify-between cursor-pointer group bg-gray-50 p-4 rounded-xl border-2 border-gray-200 hover:border-brand-purple transition">
+          <div>
+            <span className="block font-bold text-gray-700">Hiển thị Ping (Độ trễ)</span>
+            <span className="text-sm font-medium text-gray-500">Hiển thị thông số độ trễ mạng ở góc màn hình trong phòng thi.</span>
+          </div>
+          <input
+            type="checkbox"
+            checked={showPing}
+            onChange={handleTogglePing}
+            className="w-6 h-6 accent-brand-purple cursor-pointer"
+          />
+        </label>
+      </div>
+
       {/* Profile Settings */}
       <div className="bg-white justify-between rounded-3xl p-8 shadow-sm border-2 border-gray-100 flex flex-col md:flex-row gap-8">
         <div className="flex-1 space-y-6">

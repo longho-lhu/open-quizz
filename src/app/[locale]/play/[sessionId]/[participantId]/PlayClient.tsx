@@ -29,7 +29,14 @@ export default function PlayClient({ sessionId, participantId }: any) {
 
     // Fallback polling replaced by pure WebSocket events
 
-    const mqttUrl = process.env.NEXT_PUBLIC_MQTT_URL || "wss://mqtt.fitlhu.com";
+    let mqttUrl = process.env.NEXT_PUBLIC_MQTT_URL || "wss://mqtt.fitlhu.com";
+    if (typeof window !== "undefined") {
+      if (mqttUrl.includes("localhost")) {
+        mqttUrl = mqttUrl.replace("localhost", window.location.hostname);
+      } else if (mqttUrl.includes("127.0.0.1")) {
+        mqttUrl = mqttUrl.replace("127.0.0.1", window.location.hostname);
+      }
+    }
     const client = mqtt.connect(mqttUrl);
 
     client.on('connect', () => {
