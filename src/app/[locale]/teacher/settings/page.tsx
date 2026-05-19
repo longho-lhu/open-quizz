@@ -3,7 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { usersTable } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { getApiKey } from "@/app/actions/settings";
+import { getLocalModelConfig } from "@/app/actions/settings";
+import { getLocalModels } from "@/lib/models";
 import SettingsClient from "./SettingsClient";
 
 export default async function SettingsPage() {
@@ -17,7 +18,8 @@ export default async function SettingsPage() {
       where: eq(usersTable.id, session.id)
     });
   }
-  const currentKey = await getApiKey();
+  const currentModelConfig = await getLocalModelConfig();
+  const availableModels = await getLocalModels();
 
   return (
     <div className="max-w-4xl mx-auto w-full space-y-8">
@@ -31,8 +33,9 @@ export default async function SettingsPage() {
       <SettingsClient 
         initialName={dbUser?.name || session?.name || ""} 
         initialAvatar={dbUser?.avatar || ""} 
-        initialApiKey={currentKey?.apiKey || ""}
-        initialModel={currentKey?.model || "gemini-3.1-flash-lite-preview"}
+        initialLocalModelPath={currentModelConfig?.localModelPath || ""}
+        initialLocalModel={currentModelConfig?.localModel || ""}
+        availableModels={availableModels}
         dbUser={dbUser}
         isLocalServer={isLocalServer}
       />

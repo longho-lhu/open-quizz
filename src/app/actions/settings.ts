@@ -6,15 +6,15 @@ import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-export async function updateApiKeyAction(formData: FormData) {
+export async function updateLocalModelAction(formData: FormData) {
   const session = await getSession();
   if (!session) return { error: "Unauthorized" };
   
-  const key = formData.get("apiKey") as string;
-  const model = formData.get("model") as string | null;
+  const localModelPath = formData.get("localModelPath") as string;
+  const localModel = formData.get("localModel") as string | null;
   const updateData: any = {};
-  if (key !== undefined) updateData.geminiApiKey = key;
-  if (model) updateData.geminiModel = model;
+  if (localModelPath !== undefined) updateData.localModelPath = localModelPath;
+  if (localModel) updateData.localModel = localModel;
 
   await db.update(usersTable)
     .set(updateData)
@@ -25,14 +25,14 @@ export async function updateApiKeyAction(formData: FormData) {
   return { success: true };
 }
 
-export async function getApiKey() {
+export async function getLocalModelConfig() {
   const session = await getSession();
   if (!session) return null;
   const user = await db.query.usersTable.findFirst({
     where: eq(usersTable.id, session.id)
   });
   return {
-    apiKey: user?.geminiApiKey || null,
-    model: user?.geminiModel || "gemini-3.1-flash-lite-preview"
+    localModelPath: user?.localModelPath || null,
+    localModel: user?.localModel || ""
   };
 }

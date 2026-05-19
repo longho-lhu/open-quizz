@@ -2,6 +2,7 @@
   "name": "open-quizz",
   "version": "0.1.0",
   "private": true,
+  "main": "main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,7 +10,9 @@
     "lint": "eslint",
     "update": "git pull && npm install && npx drizzle-kit push && npm run build && pm2 restart all && pm2 save && echo 'Update completed!'",
     "db:update": "npx drizzle-kit push",
-    "db:studio": "npx drizzle-kit studio"
+    "db:studio": "npx drizzle-kit studio",
+    "app:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "app:build": "npm run build && electron-builder"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
@@ -25,6 +28,7 @@
     "next": "^16.2.3",
     "next-intl": "^4.8.3",
     "next-swagger-doc": "^0.4.1",
+    "node-llama-cpp": "^3.18.1",
     "nodemailer": "^8.0.3",
     "pdf-parse": "^2.4.5",
     "qrcode.react": "^4.2.0",
@@ -46,11 +50,15 @@
     "@types/react-dom": "^19",
     "@types/swagger-ui-react": "^5.18.0",
     "babel-plugin-react-compiler": "1.0.0",
+    "concurrently": "^9.2.1",
     "dotenv": "^17.3.1",
-    "drizzle-kit": "^0.18.1",
+    "drizzle-kit": "^0.31.10",
+    "electron": "^42.0.0",
+    "electron-builder": "^26.8.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.7",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^9.0.5"
   }
 }
