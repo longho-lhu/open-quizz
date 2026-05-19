@@ -95,7 +95,7 @@ export default function SettingsClient({ initialName, initialAvatar, initialLoca
     }
   };
 
-  const handleProfileSubmit = async (e: any) => {
+  const handleProfileSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setProfileMsg(""); setProfileErr("");
     const res = await updateProfileAction(name, avatar);
@@ -107,7 +107,7 @@ export default function SettingsClient({ initialName, initialAvatar, initialLoca
     }
   };
 
-  const handlePasswordSubmit = async (e: any) => {
+  const handlePasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setPwMsg(""); setPwErr("");
 
@@ -128,23 +128,6 @@ export default function SettingsClient({ initialName, initialAvatar, initialLoca
       } else {
         setPwErr(t("errorGeneric"));
       }
-    }
-  };
-
-  const handleSync = async () => {
-    setSyncMsg(""); setSyncErr("");
-    setIsSyncing(true);
-    try {
-      const res = await syncDataFromVPS();
-      if (res.success) {
-        setSyncMsg(res.message || "Đồng bộ thành công!");
-      } else {
-        setSyncErr(res.error || "Có lỗi xảy ra khi đồng bộ.");
-      }
-    } catch (e) {
-      setSyncErr("Lỗi kết nối.");
-    } finally {
-      setIsSyncing(false);
     }
   };
 
@@ -346,28 +329,6 @@ export default function SettingsClient({ initialName, initialAvatar, initialLoca
         </form>
       </div>
 
-      {/* Sync Settings (Local Server Only) */}
-      {isLocalServer && (
-        <div className="bg-white rounded-3xl p-8 shadow-sm border-2 border-brand-purple/30 max-w-2xl bg-gradient-to-r from-purple-50 to-white">
-          <h2 className="text-2xl font-black text-brand-dark mb-4 flex items-center gap-2">
-            <span className="text-brand-purple">☁️</span> Đồng bộ dữ liệu Online
-          </h2>
-          <p className="text-gray-600 mb-6 font-medium">
-            Tải dữ liệu mới nhất (bộ câu hỏi, cài đặt) của tài khoản này từ máy chủ trực tuyến về máy trạm cục bộ. Cần có kết nối Internet để thực hiện.
-          </p>
-
-          {syncMsg && <p className="text-brand-green font-bold text-sm bg-brand-green/10 p-3 rounded-lg mb-4">{syncMsg}</p>}
-          {syncErr && <p className="text-red-500 font-bold text-sm bg-red-50 p-3 rounded-lg mb-4">{syncErr}</p>}
-
-          <button
-            onClick={handleSync}
-            disabled={isSyncing}
-            className="btn-primary w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-brand-purple to-pink-500 flex items-center justify-center gap-2"
-          >
-            {isSyncing ? "Đang đồng bộ..." : "Đồng bộ ngay"}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
