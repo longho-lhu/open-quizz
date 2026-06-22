@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { updateProfileAction, updatePasswordAction } from "@/app/actions/user";
 import { updateLocalModelAction } from "@/app/actions/settings";
 
-export default function SettingsClient({ initialName, initialAvatar, initialLocalModelPath, initialLocalModel = "", availableModels = [], dbUser }: { initialName: string, initialAvatar: string, initialLocalModelPath: string, initialLocalModel?: string, availableModels?: any[], dbUser?: any }) {
+export default function SettingsClient({ initialName, initialAvatar, initialLocalModelPath, initialLocalModel = "", availableModels = [], dbUser, isLocalServer = false }: { initialName: string, initialAvatar: string, initialLocalModelPath: string, initialLocalModel?: string, availableModels?: any[], dbUser?: any, isLocalServer?: boolean }) {
   const t = useTranslations("Settings");
 
   const [name, setName] = useState(initialName || "");

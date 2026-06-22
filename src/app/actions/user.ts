@@ -63,7 +63,7 @@ export async function updatePasswordAction(oldPassword: string, newPassword: str
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await db.update(usersTable)
       .set({ password: hashedPassword })
-      .where(eq(usersTable.id, session.userId));
+      .where(eq(usersTable.id, session.id));
 
     return { success: true };
   } catch (error) {
