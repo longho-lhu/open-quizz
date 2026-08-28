@@ -31,13 +31,13 @@ export default async function StudentHistoryPage() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto w-full space-y-8 p-4">
-      <div className="flex items-center justify-between">
+    <div className="max-w-4xl mx-auto w-full space-y-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-brand-dark">{t('title')}</h1>
-          <p className="text-gray-500">{t('subtitle')}</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-brand-dark">{t('title')}</h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">{t('subtitle')}</p>
         </div>
-        <Link href="/join" className="btn-primary">
+        <Link href="/join" className="btn-primary w-full sm:w-auto text-center shrink-0">
           {t('joinNewGame')}
         </Link>
       </div>

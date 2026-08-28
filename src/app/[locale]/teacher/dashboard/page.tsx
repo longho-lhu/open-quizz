@@ -13,12 +13,12 @@ export default async function TeacherDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto w-full space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-brand-dark">{t("title")}</h1>
-          <p className="text-gray-500">Manage your quizzes and track student progress.</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-brand-dark">{t("title")}</h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">Manage your quizzes and track student progress.</p>
         </div>
-        <Link href="/teacher/quiz/create" className="btn-primary">
+        <Link href="/teacher/quiz/create" className="btn-primary w-full sm:w-auto text-center shrink-0">
           {t("createBtn")}
         </Link>
       </div>

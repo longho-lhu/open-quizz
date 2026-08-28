@@ -1,61 +1,61 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { mysqlTable, varchar, text, int, boolean, timestamp } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
-export const usersTable = sqliteTable("users", {
-  id: text("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  name: text("name"),
+export const usersTable = mysqlTable("users", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }),
   password: text("password"),
   avatar: text("avatar"),
   localModelPath: text("local_model_path"),
   localModel: text("local_model"),
-  role: text("role").notNull().default("STUDENT"),
-  plan: text("plan").notNull().default("ECO"),
-  isVerified: integer("is_verified", { mode: "boolean" }).notNull().default(false),
-  verificationToken: text("verification_token"),
-  resetToken: text("reset_token"),
-  resetTokenExpires: integer("reset_token_expires", { mode: "timestamp" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  role: varchar("role", { length: 50 }).notNull().default("STUDENT"),
+  plan: varchar("plan", { length: 50 }).notNull().default("ECO"),
+  isVerified: boolean("is_verified").notNull().default(false),
+  verificationToken: varchar("verification_token", { length: 255 }),
+  resetToken: varchar("reset_token", { length: 255 }),
+  resetTokenExpires: timestamp("reset_token_expires"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const teacherApprovalsTable = sqliteTable("teacher_approvals", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
-  status: text("status").notNull().default("PENDING"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+export const teacherApprovalsTable = mysqlTable("teacher_approvals", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 50 }).notNull().default("PENDING"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const quizzesTable = sqliteTable("quizzes", {
-  id: text("id").primaryKey(),
-  title: text("title").notNull(),
+export const quizzesTable = mysqlTable("quizzes", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  creatorId: text("creator_id").notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
-  timeLimit: integer("time_limit").notNull().default(15),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  creatorId: varchar("creator_id", { length: 255 }).notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+  timeLimit: int("time_limit").notNull().default(15),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const questionsTable = sqliteTable("questions", {
-  id: text("id").primaryKey(),
+export const questionsTable = mysqlTable("questions", {
+  id: varchar("id", { length: 255 }).primaryKey(),
   text: text("text").notNull(),
-  quizId: text("quiz_id").notNull().references(() => quizzesTable.id, { onDelete: "cascade" }),
-  timeLimit: integer("time_limit").notNull().default(15),
+  quizId: varchar("quiz_id", { length: 255 }).notNull().references(() => quizzesTable.id, { onDelete: "cascade" }),
+  timeLimit: int("time_limit").notNull().default(15),
   imageUrl: text("image_url"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const optionsTable = sqliteTable("options", {
-  id: text("id").primaryKey(),
+export const optionsTable = mysqlTable("options", {
+  id: varchar("id", { length: 255 }).primaryKey(),
   text: text("text").notNull(),
-  isCorrect: integer("is_correct", { mode: "boolean" }).notNull().default(false),
-  questionId: text("question_id").notNull().references(() => questionsTable.id, { onDelete: "cascade" }),
+  isCorrect: boolean("is_correct").notNull().default(false),
+  questionId: varchar("question_id", { length: 255 }).notNull().references(() => questionsTable.id, { onDelete: "cascade" }),
 });
 
-export const resultsTable = sqliteTable("results", {
-  id: text("id").primaryKey(),
-  score: integer("score").notNull(),
-  studentId: text("student_id").notNull().references(() => usersTable.id),
-  quizId: text("quiz_id").notNull().references(() => quizzesTable.id),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+export const resultsTable = mysqlTable("results", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  score: int("score").notNull(),
+  studentId: varchar("student_id", { length: 255 }).notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  quizId: varchar("quiz_id", { length: 255 }).notNull().references(() => quizzesTable.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const quizzesRelations = relations(quizzesTable, ({ many, one }) => ({
@@ -81,40 +81,40 @@ export const optionsRelations = relations(optionsTable, ({ one }) => ({
   }),
 }));
 
-export const liveSessionsTable = sqliteTable("live_sessions", {
-  id: text("id").primaryKey(),
-  quizId: text("quiz_id").notNull().references(() => quizzesTable.id, { onDelete: 'cascade' }),
-  hostId: text("host_id").references(() => usersTable.id),
-  code: text("code").notNull().unique(),
-  name: text("name"), // Optional custom name like "Class 10A2"
-  status: text("status").notNull().default("WAITING"), // WAITING, IN_PROGRESS, FINISHED
-  feedbackLevel: text("feedback_level").notNull().default("SHOW_ALL"), // SHOW_ALL, SHOW_CORRECT_INCORRECT, SHOW_NOTHING
-  randomNicknames: integer("random_nicknames", { mode: "boolean" }).notNull().default(false),
-  timeoutWait: integer("timeout_wait", { mode: "boolean" }).notNull().default(false),
-  musicTheme: text("music_theme").notNull().default("s1.MP3"),
-  currentQuestionIndex: integer("current_question_index").notNull().default(-1),
-  progressionMode: text("progression_mode").notNull().default("AUTO"), // AUTO, MANUAL
-  startedAt: integer("started_at", { mode: "timestamp" }),
+export const liveSessionsTable = mysqlTable("live_sessions", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  quizId: varchar("quiz_id", { length: 255 }).notNull().references(() => quizzesTable.id, { onDelete: 'cascade' }),
+  hostId: varchar("host_id", { length: 255 }).references(() => usersTable.id, { onDelete: "set null" }),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 255 }), 
+  status: varchar("status", { length: 50 }).notNull().default("WAITING"), 
+  feedbackLevel: varchar("feedback_level", { length: 50 }).notNull().default("SHOW_ALL"), 
+  randomNicknames: boolean("random_nicknames").notNull().default(false),
+  timeoutWait: boolean("timeout_wait").notNull().default(false),
+  musicTheme: varchar("music_theme", { length: 50 }).notNull().default("s1.MP3"),
+  currentQuestionIndex: int("current_question_index").notNull().default(-1),
+  progressionMode: varchar("progression_mode", { length: 50 }).notNull().default("AUTO"), 
+  startedAt: timestamp("started_at"),
 });
 
-export const participantsTable = sqliteTable("participants", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").references(() => usersTable.id),
-  sessionId: text("session_id").notNull().references(() => liveSessionsTable.id),
-  nickname: text("nickname").notNull(),
-  randomName: text("random_name").notNull(),
-  deviceId: text("device_id"),
-  score: integer("score").notNull().default(0),
+export const participantsTable = mysqlTable("participants", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id", { length: 255 }).references(() => usersTable.id, { onDelete: "set null" }),
+  sessionId: varchar("session_id", { length: 255 }).notNull().references(() => liveSessionsTable.id, { onDelete: "cascade" }),
+  nickname: varchar("nickname", { length: 255 }).notNull(),
+  randomName: varchar("random_name", { length: 255 }).notNull(),
+  deviceId: varchar("device_id", { length: 255 }),
+  score: int("score").notNull().default(0),
 });
 
-export const participantAnswersTable = sqliteTable("participant_answers", {
-  id: text("id").primaryKey(),
-  participantId: text("participant_id").notNull().references(() => participantsTable.id),
-  questionId: text("question_id").notNull().references(() => questionsTable.id),
-  optionId: text("option_id").notNull().references(() => optionsTable.id),
-  points: integer("points").notNull().default(0),
-  isCorrect: integer("is_correct", { mode: "boolean" }).notNull().default(false),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+export const participantAnswersTable = mysqlTable("participant_answers", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  participantId: varchar("participant_id", { length: 255 }).notNull().references(() => participantsTable.id, { onDelete: "cascade" }),
+  questionId: varchar("question_id", { length: 255 }).notNull().references(() => questionsTable.id, { onDelete: "cascade" }),
+  optionId: varchar("option_id", { length: 255 }).notNull().references(() => optionsTable.id, { onDelete: "cascade" }),
+  points: int("points").notNull().default(0),
+  isCorrect: boolean("is_correct").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const liveSessionsRelations = relations(liveSessionsTable, ({ one, many }) => ({
@@ -152,11 +152,11 @@ export const participantAnswersRelations = relations(participantAnswersTable, ({
   }),
 }));
 
-export const quizSharesTable = sqliteTable("quiz_shares", {
-  id: text("id").primaryKey(),
-  quizId: text("quiz_id").notNull().references(() => quizzesTable.id, { onDelete: 'cascade' }),
-  shareToEmail: text("share_to_email").notNull(),
-  sharedAt: integer("shared_at", { mode: "timestamp" }).notNull(),
+export const quizSharesTable = mysqlTable("quiz_shares", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  quizId: varchar("quiz_id", { length: 255 }).notNull().references(() => quizzesTable.id, { onDelete: 'cascade' }),
+  shareToEmail: varchar("share_to_email", { length: 255 }).notNull(),
+  sharedAt: timestamp("shared_at").notNull().defaultNow(),
 });
 
 export const quizSharesRelations = relations(quizSharesTable, ({ one }) => ({

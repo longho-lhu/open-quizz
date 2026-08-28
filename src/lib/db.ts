@@ -1,32 +1,13 @@
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import * as schema from "./schema";
-import fs from "fs";
-import { execSync } from "child_process";
-import bcrypt from "bcryptjs";
-import { eq, sql } from "drizzle-orm";
 
-const dbFile = "sqlite.db";
-const needsInit = !fs.existsSync(dbFile) || fs.statSync(dbFile).size === 0;
+const globalForDb = globalThis as unknown as {
+  conn: mysql.Pool | undefined;
+};
 
-const sqlite = new Database(dbFile);
-export const db = drizzle(sqlite, { schema });
+const poolConnection = globalForDb.conn ?? mysql.createPool(process.env.DATABASE_URL || "mysql://user:password@localhost:3306/open_quizz");
 
-if (needsInit) {
-  console.log("Database is empty or missing. Initializing schema...");
-  try {
-    execSync("npx drizzle-kit push", { stdio: "inherit" });
-    console.log("Database schema created successfully.");
-  } catch (err) {
-    console.error("Failed to push schema to database:", err);
-  }
-}
+if (process.env.NODE_ENV !== "production") globalForDb.conn = poolConnection;
 
-// Seeder removed as per request to handle admin via .env
-
-try {
-  sqlite.exec('ALTER TABLE `live_sessions` ADD COLUMN `progression_mode` text NOT NULL DEFAULT "AUTO"');
-  console.log("Migration: added progression_mode column");
-} catch (e) {
-  // Ignore if already exists
-}
+export const db = drizzle(poolConnection, { schema, mode: "planetscale" });

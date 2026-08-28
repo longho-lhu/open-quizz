@@ -10,10 +10,10 @@ export default async function TeacherSessionsHistory() {
 
   return (
     <div className="max-w-5xl mx-auto w-full space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
          <div>
-           <h1 className="text-4xl font-black text-brand-dark">{t("title")}</h1>
-           <p className="text-xl font-medium text-gray-500 mt-2">View past quiz games and student results.</p>
+           <h1 className="text-3xl sm:text-4xl font-black text-brand-dark">{t("title")}</h1>
+           <p className="text-lg sm:text-xl font-medium text-gray-500 mt-2">View past quiz games and student results.</p>
          </div>
       </div>
 
@@ -24,17 +24,17 @@ export default async function TeacherSessionsHistory() {
           <p className="text-gray-500">Host a Live Quiz to see history appear here.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-3xl shadow-sm border-2 border-gray-100 overflow-hidden">
-          <table className="w-full text-left border-collapse">
+        <div className="bg-white rounded-3xl shadow-sm border-2 border-gray-100 overflow-hidden overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-gray-50 text-gray-600 text-sm font-bold uppercase tracking-wider border-b-2 border-gray-100">
-                <th className="p-6">{t("gameCode")}</th>
-                <th className="p-6">{t("quiz")}</th>
-                <th className="p-6">{t("status")}</th>
-                <th className="p-6">{t("date")}</th>
-                <th className="p-6">{t("players")}</th>
-                <th className="p-6">{t("winner")}</th>
-                <th className="p-6">{t("actions")}</th>
+                <th className="p-4 sm:p-6">{t("gameCode")}</th>
+                <th className="p-4 sm:p-6">{t("quiz")}</th>
+                <th className="p-4 sm:p-6">{t("status")}</th>
+                <th className="p-4 sm:p-6">{t("date")}</th>
+                <th className="p-4 sm:p-6">{t("players")}</th>
+                <th className="p-4 sm:p-6">{t("winner")}</th>
+                <th className="p-4 sm:p-6">{t("actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -49,26 +49,26 @@ export default async function TeacherSessionsHistory() {
                 
                 return (
                   <tr key={sess.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-6">
-                      <Link href={`/teacher/sessions/${sess.id}`} className="font-black text-brand-purple text-xl hover:underline">#{sess.code}</Link>
+                    <td className="p-4 sm:p-6">
+                      <Link href={`/teacher/sessions/${sess.id}`} className="font-black text-brand-purple text-lg sm:text-xl hover:underline">#{sess.code}</Link>
                     </td>
-                    <td className="p-6 font-bold text-gray-800">{sess.quiz.title}</td>
-                    <td className="p-6">
-                      <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                    <td className="p-4 sm:p-6 font-bold text-gray-800">{sess.quiz.title}</td>
+                    <td className="p-4 sm:p-6">
+                      <span className={`px-3 py-1 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap ${
                         sess.status === 'FINISHED' ? 'bg-gray-200 text-gray-600' :
                         sess.status === 'IN_PROGRESS' ? 'bg-brand-green/20 text-brand-green' : 'bg-brand-yellow/20 text-brand-yellow'
                       }`}>
                         {sess.status}
                       </span>
                     </td>
-                    <td className="p-6 text-gray-500 font-medium">{dateStr}</td>
-                    <td className="p-6 font-bold text-gray-700">{sess.participants.length}</td>
-                    <td className="p-6 font-bold text-brand-purple">
+                    <td className="p-4 sm:p-6 text-gray-500 font-medium whitespace-nowrap">{dateStr}</td>
+                    <td className="p-4 sm:p-6 font-bold text-gray-700">{sess.participants.length}</td>
+                    <td className="p-4 sm:p-6 font-bold text-brand-purple">
                       {isFinished ? winner : "TBD"}
                     </td>
-                    <td className="p-6">
-                      <div className="flex flex-col gap-2">
-                        <Link href={`/teacher/sessions/${sess.id}`} className="text-xs font-bold text-white bg-brand-purple px-3 py-1 rounded-full text-center hover:bg-purple-700 transition">{t("viewResults")}</Link>
+                    <td className="p-4 sm:p-6">
+                      <div className="flex flex-col gap-2 w-max">
+                        <Link href={`/teacher/sessions/${sess.id}`} className="text-xs font-bold text-white bg-brand-purple px-3 py-2 rounded-full text-center hover:bg-purple-700 transition">{t("viewResults")}</Link>
                         <SessionAdminButtons sessionId={sess.id} currentName={sess.name || sess.quiz.title} status={sess.status} />
                       </div>
                     </td>

@@ -42,12 +42,9 @@ export async function generateQuizQuestionsAction(formData: FormData) {
   const session = await getSession();
   if (!session) return { error: "Unauthorized. Please log in as a teacher." };
 
-  const user = await db.query.usersTable.findFirst({
-    where: eq(usersTable.id, session.id)
-  });
-
-  if (!user?.localModelPath) {
-    return { error: "Please configure your Local Llama Model Path in Settings first." };
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) {
+    return { error: "Please configure DEEPSEEK_API_KEY in your .env file." };
   }
 
   const topic = formData.get("topic") as string;
@@ -66,7 +63,6 @@ export async function generateQuizQuestionsAction(formData: FormData) {
         const pdfData = await pdfParse(buffer);
         extractedFileText = pdfData.text;
       } else {
-        // Fallback for raw text files
         extractedFileText = buffer.toString("utf8");
       }
     } catch (err) {
@@ -84,29 +80,59 @@ Generate ${count} multiple choice questions corresponding to the Cognitive Level
 The questions and answers MUST BE written in ${language}.
 Each question must have exactly 4 options with only 1 correct answer.
 IMPORTANT RESTRICTION: The question text MUST NOT exceed 50 words. Make it concise and easy to read.
+
+Return the response in valid JSON matching this schema:
+{
+  "questions": [
+    {
+      "text": "Question text",
+      "options": [
+        { "text": "Option A", "isCorrect": true },
+        { "text": "Option B", "isCorrect": false },
+        { "text": "Option C", "isCorrect": false },
+        { "text": "Option D", "isCorrect": false }
+      ]
+    }
+  ]
+}
+
 ${topic ? `Topic: ${topic}\n` : ""}
 ${documentText ? `Based on the following document content:\n${documentText.substring(0, 10000)}` : ""}
 ${extractedFileText ? `Based on the attached document content:\n${extractedFileText.substring(0, 10000)}` : ""}
 `;
 
   try {
-    const llama = await getLlama();
-    const model = await llama.loadModel({ modelPath: user.localModelPath });
-    const context = await model.createContext();
-    const chatSession = new LlamaChatSession({ contextSequence: context.getSequence() });
-    const grammar = new LlamaJsonSchemaGrammar(llama, responseJsonSchema);
-
-    const responseText = await chatSession.prompt(promptText, {
-      grammar: grammar,
-      temperature: 0.7,
-      maxTokens: 2048,
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [{ role: "user", content: promptText }],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+      }),
     });
-    
-    if (!responseText) throw new Error("No response text from Llama");
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error("Deepseek API Error:", errBody);
+      throw new Error(`Deepseek API returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const responseText = data.choices[0].message.content;
     const object = JSON.parse(responseText);
+
+    if (!object.questions || !Array.isArray(object.questions)) {
+      throw new Error("Invalid response format from AI");
+    }
+
     return { success: true, questions: object.questions };
   } catch (err: any) {
     console.error("AI Generation Error:", err);
-    return { error: "Failed to generate questions. Ensure your local model path is valid and the model is running." };
+    return { error: "Failed to generate questions using Deepseek API." };
   }
 }

@@ -1,9 +1,9 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { quizzesTable } from "@/lib/schema";
+import { quizzesTable, usersTable } from "@/lib/schema";
 import { deleteQuizAction } from "@/app/actions/admin";
-import { desc, like } from "drizzle-orm";
+import { desc, like, eq } from "drizzle-orm";
 import DeleteButton from "@/components/DeleteButton";
 import AdminSearch from "@/components/AdminSearch";
 import { getTranslations } from "next-intl/server";
@@ -19,11 +19,19 @@ export default async function AdminQuizzesPage({ searchParams }: { searchParams:
 
   const t = await getTranslations("Admin");
 
-  const allQuizzes = await db.query.quizzesTable.findMany({
-    where: q ? like(quizzesTable.title, `%${q}%`) : undefined,
-    orderBy: [desc(quizzesTable.createdAt)],
-    with: { creator: true },
-  });
+  const allQuizzesRows = await db.select({
+    quiz: quizzesTable,
+    creator: usersTable
+  })
+  .from(quizzesTable)
+  .leftJoin(usersTable, eq(quizzesTable.creatorId, usersTable.id))
+  .where(q ? like(quizzesTable.title, `%${q}%`) : undefined)
+  .orderBy(desc(quizzesTable.createdAt));
+
+  const allQuizzes = allQuizzesRows.map(row => ({
+    ...row.quiz,
+    creator: row.creator
+  }));
 
   return (
     <div className="space-y-8 pb-20 max-w-5xl mx-auto w-full">

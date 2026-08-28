@@ -34,11 +34,19 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
     orderBy: [desc(usersTable.createdAt)],
   });
 
-  const pendingApprovals = await db.query.teacherApprovalsTable.findMany({
-    where: eq(teacherApprovalsTable.status, "PENDING"),
-    orderBy: [desc(teacherApprovalsTable.createdAt)],
-    with: { user: true }
-  });
+  const pendingApprovalsRows = await db.select({
+    approval: teacherApprovalsTable,
+    user: usersTable
+  })
+  .from(teacherApprovalsTable)
+  .leftJoin(usersTable, eq(teacherApprovalsTable.userId, usersTable.id))
+  .where(eq(teacherApprovalsTable.status, "PENDING"))
+  .orderBy(desc(teacherApprovalsTable.createdAt));
+
+  const pendingApprovals = pendingApprovalsRows.map(row => ({
+    ...row.approval,
+    user: row.user
+  }));
 
   return (
     <div className="space-y-8 pb-20 max-w-5xl mx-auto w-full">
